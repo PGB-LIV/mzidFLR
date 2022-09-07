@@ -19,6 +19,7 @@ def extract_PTMprophet_IDent_df(input,PXD):
 	counter=1
 	print("--- %s seconds ---" % (time.time() - start_time))
 	for i in range(len(df)):
+		#print(str(i)+"/"+str(len(df)))
 		if "unknown" in df.loc[i,'Modifications']:
 			mods_temp=df.loc[i,'Modifications'].split(";")
 			index=mods_temp.index('unknown_mod')
@@ -49,19 +50,32 @@ def extract_PTMprophet_IDent_df(input,PXD):
 		PTMscore_list=""
 		if df.loc[i, 'PTM info'] != "":
 			for x,z in zip(df.loc[i,'Positions'].split(";")[:-1],df.loc[i,'Modifications'].split(";")[:-1]):
-				if z=="Carbamidomethylation" or z=="Acetyl" or z=="Glu->pyro-Glu" or z=="unknown_mod" or z=="Deamidated" or z=="Gln->pryo-Glu" or "iTRAQ" in z or "." in z:
-					PTMscore_list+="0;"
-				else:
+				#if z=="Carbamidomethylation" or z=="Acetyl" or z=="Glu->pyro-Glu" or z=="unknown_mod" or z=="Deamidated" or z=="Gln->pryo-Glu" or "iTRAQ" in z or "." in z:
+					#PTMscore_list+="0;"
+				#else:
+					#for y in df.loc[i,'PTM info'].split(";"):
+						#if y.split(":")[2]==x:
+							#PTMscore_list+=y.split(":")[1]+";"
+				if z=="Phospho":
+					score_found="No"
 					for y in df.loc[i,'PTM info'].split(";"):
 						if y.split(":")[2]==x:
 							PTMscore_list+=y.split(":")[1]+";"
+							score_found="Yes"
+					if score_found=="No":
+						PTMscore_list+="0;"
+						print("CHECK: "+ df.loc[i,"Spectrum"])
+				else:
+					PTMscore_list += "0;"
 		PTM_scores.append(PTMscore_list[:-1])
 
-		df.loc[i,'USI']="mzspec:" + PXD + ":" + df.loc[i,'Spectrum'] + ":" + peptide_temp + "/" + str(df.loc[i,'Charge'])
+		df.loc[i,'USI']="mzspec:" + PXD + ":" + df.loc[i,'Spectrum'].split(".")[0]  + ":scan:" + df.loc[i,'Spectrum'].split(".")[1] + ":" + peptide_temp + "/" + str(df.loc[i,'Charge'])
 		df.loc[i,'Sources'] = df.loc[i,'Spectrum'].split(".")[0]
 		#print(str(counter)+"/"+str(len(df)))
 		counter+=1
 		#print("--- %s seconds ---" % (time.time() - start_time))
+
+	print("DONE")
 	df['mass_diff'] = df['Calculated mass']-df['Experimental mass']
 	df['ppm_error'] = (((df['mass_diff']) / df['Calculated mass']) * 1e6)
 
