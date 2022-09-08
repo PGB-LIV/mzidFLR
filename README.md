@@ -19,6 +19,7 @@ Used for creating site based peptidoform format.
 # Pipeline description
 
 Main script "TPP_comparison.py" calls modules:
+
 	"convert_mzIdentML_sax.py" -> converts MZML to CSV
 	"FDR.py" -> calculate Global FDR
 		output: "FDR_output.csv"
