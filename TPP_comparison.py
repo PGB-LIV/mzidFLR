@@ -10,7 +10,7 @@ import TPP_reusable.Binomial_adjustment as Binomial_adjustment
 
 start_time = time.time()
 
-#TPP_comparison.py [mzid_file] [PXD] [optional: FDR_cutoff] [optional: PTM_score_cutoff]
+#TPP_comparison.py [mzid_file] [PXD] [optional: FDR_cutoff]
 if len(sys.argv)<2:
     sys.exit("Provide mzid file and PXD identifier. TPP_comparison.py [mzid_file] [PXD] [optional: FDR_cutoff] [optional: PTM_score_cutoff]")
 mzid_file=sys.argv[1]
@@ -25,13 +25,8 @@ try:
 except:
     FDR_cutoff=0.01
     print("FDR cutoff not specified, 0.01 default FDR cutoff used")
-try:
-    PTM_score_cutoff = sys.arg[4]
-except:
-    PTM_score_cutoff = 0
-    print("PTM score cutoff not specified, 0 default PTM score cutoff used")
 
-sub = "FDR_" + str(FDR_cutoff) + "_PTM_score_" + str(PTM_score_cutoff)
+sub = "FDR_" + str(FDR_cutoff)
 decoy_list = []
 
 results_file = "interact-ipro-ptm.pep.mzid.csv"
@@ -66,3 +61,6 @@ Post_analysis.model_FLR(sub + "/" + "Site-based.csv")
 pAla.calulate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy)
 Binomial_adjustment.Binomial(sub + "/" + "Site-based_FLR_" + decoy + ".csv",decoy)
 print("FLR calculations done --- %s seconds ---" % (time.time() - start_time))
+
+os.remove("Site-based.csv")
+os.remove("Site-based_FLR.csv")

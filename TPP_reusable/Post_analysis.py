@@ -44,9 +44,6 @@ def site_based(input, FDR_cutoff):
     df = df.sort_values(['Peptide', 'Score','PTM Score'], ascending=[True, True, True])
     df['All_Proteins']=df['Protein']
     df['All_USI']=df['USI']
-    output=input.replace(".csv","_filtered_"+str(FDR_cutoff)+".csv")
-    df.to_csv(output,index=False)
-    print("Filtered for "+str(FDR_cutoff)+" FDR cut off")
 
     df.dropna(subset=['PTM'], inplace=True)
     df=df.fillna('')
