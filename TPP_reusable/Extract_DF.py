@@ -75,13 +75,9 @@ def extract_PTMprophet_IDent_df(input,PXD):
 		counter+=1
 		#print("--- %s seconds ---" % (time.time() - start_time))
 
-	print("DONE")
 	df['mass_diff'] = df['Calculated mass']-df['Experimental mass']
 	df['ppm_error'] = (((df['mass_diff']) / df['Calculated mass']) * 1e6)
-
-	print("--- %s seconds ---" % (time.time() - start_time))
 	df2 = pd.DataFrame({"Peptide_mod": all_peptide_mods, "Peptide":df['Peptide'].values , "Protein":df['Protein'].values, "Source":df['Sources'].values, "Score":df['PSM probability'].values, "PTM":PTMs ,
 						"PTM positions":all_positions,"PTM Score": PTM_scores, "PTM_info":df['PTM info'].values,"Spectrum":df['Spectrum'].values, "USI": df['USI'].values,"mass_diff":df['mass_diff'].values
 						   ,"ppm_error":df['ppm_error'].values, "Protein position":protein_positions,"Mass shift":mass_shift})
-	print("--- %s seconds ---" % (time.time() - start_time))
 	return(df2)

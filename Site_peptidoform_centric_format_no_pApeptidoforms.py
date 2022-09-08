@@ -53,32 +53,6 @@ for i in [PXD000923,PXD002222,PXD002756,PXD004705,PXD004939,PXD005241,PXD012764,
     df['PRIDE dataset URL (including the USI)']=""
     df['Supporting PSM count']=df['Supporting PSM count'].str.count(";")+1
 
-    #Repeat binomial adjustment for decoy replacements
-    # df = df.sort_values(by=(['Proteins','Protein position']), ascending=[False,False])
-    # df = df.reset_index(drop=True)
-    # for i in range(len(df)):
-    #     protein=df.loc[i,'Proteins'].split(";")[0]
-    #     pos=df.loc[i,'Protein position']
-    #     df.loc[i,'Protein_temp']=protein
-    #     df.loc[i,'Protein-pos']=protein+"-"+str(pos)
-    #     df.loc[i,'Modification']=search_mod
-    # df2= df.groupby(['Protein-pos'])['Supporting PSM count'].sum()
-    # dict=df2.to_dict()
-    #
-    # for i in range(len(df)):
-    #     protein=df.loc[i,'Proteins'].split(";")[0]
-    #     pos=df.loc[i,'Protein position']
-    #     df_temp=df.loc[(df['Protein_temp']==protein) & (df['Peptide_start_Protein']<=pos) & (df['Peptide_end_Protein']>=pos)]
-    #     df.loc[i,'Protein_occ']=df_temp['Supporting PSM count'].sum()
-    #     df.loc[i,'Protein_loc']=dict[df.loc[i,'Protein-pos']]
-    # #df.to_csv("temp.csv", sep=",", index=False)
-    # df['Binomial_p'] = binom.pmf(df['Protein_loc'],df['Protein_occ'],df['pA_prob_chance_binomial'])
-    # df['Binomial_i'] = df['Site probability'] * (1-df['Binomial_p'])
-    # df['Final adjusted site probability'] = df['Binomial_i'] * df['PSM Score']
-
-    #df.to_csv("Site_peptidoform_centric_final_updated_binomial_no_pA_temp.csv", sep="\t", index=False)
-
-    #df.to_csv("Site_peptidoform_final_temp.csv", sep="\t", index=False)
     df['Pep_pos'] = df['Unmodified Sequence'] + "-" + df['Site position'].astype(str)
     df = df.sort_values(by=(['Pep_pos','Modified Peptide','Final site probability']), ascending=[True, True, True])
     #Repeat collapse for the updated decoy positions
@@ -117,16 +91,6 @@ for i in [PXD000923,PXD002222,PXD002756,PXD004705,PXD004939,PXD005241,PXD012764,
     df['PSM count P>=0.99']=sig6
     df = df.reset_index(drop=True)
 
-
-    #Recalculate FLR
-    # df = df.sort_values(by=(['Final adjusted site probability']), ascending=[False])
-    # df = df.reset_index(drop=True)
-    # df['Count_binomial'] = (df.index) + 1
-    # df['final_temp'] = 1 - df['Final adjusted site probability']
-    # df['Binomial_final_prob_FLR'] = df['final_temp'].cumsum() / df['Count_binomial']
-    # df['Binomial final adjusted q_value'] = df['Binomial_final_prob_FLR']
-    # df['Binomial final adjusted q_value'] = df.iloc[::-1]['Binomial_final_prob_FLR'].cummin()
-
     organism=[]
     PMID=[]
     for i in range(len(df)):
@@ -135,14 +99,12 @@ for i in [PXD000923,PXD002222,PXD002756,PXD004705,PXD004939,PXD005241,PXD012764,
         dataset_ID.append(PXD)
         organism.append(dict[PXD][1])
         PMID.append(dict[PXD][0])
-    #print(df['Binomial_final_prob_q_value'])
     df['Site Passes Threshold']=np.where(df['Binomial final q value'] <= FLR_threshold, 1, 0)
     df['Dataset ID']=dataset_ID
     df['Site ID']=df.index
     df['Organism']=organism
     df['PubMedID']=PMID
 
-    #Removed PTM_info, Decop_P,
     df = df[['Site ID', 'Proteins', 'Unmodified Sequence', 'Modified Peptide','Modification','Site position', 'Site probability', 'PSM Score',
             'Final site probability','Binomial final q value','Site Passes Threshold', 'Supporting PSM count','Supporting PSM Count (Thresholded 0.05 Global FLR)', 'Dataset ID', 'PRIDE dataset URL', 'PubMedID',
              'Sample ID', 'Organism', 'USI','PRIDE dataset URL (including the USI)','PSM count 0.01<P<=0.05','PSM count 0.05<P<=0.19','PSM count 0.19<P<=0.81','PSM count 0.81<P<=0.95','PSM count 0.95<P<0.99','PSM count P>=0.99']]
