@@ -29,7 +29,7 @@ except:
 sub = "FDR_" + str(FDR_cutoff)
 decoy_list = []
 
-results_file = "interact-ipro-ptm.pep.mzid.csv"
+results_file = mzid_file+".csv"
 
 if os.path.isfile(results_file):
     print("mzid converted file exists")
@@ -62,5 +62,5 @@ pAla.calulate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy)
 Binomial_adjustment.Binomial(sub + "/" + "Site-based_FLR_" + decoy + ".csv",decoy)
 print("FLR calculations done --- %s seconds ---" % (time.time() - start_time))
 
-os.remove("Site-based.csv")
-os.remove("Site-based_FLR.csv")
+os.remove(sub+"\Site-based.csv")
+os.remove(sub+"\Site-based_FLR.csv")
