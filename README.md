@@ -22,12 +22,14 @@ Main script "TPP_comparison.py" calls modules:
 
 	"convert_mzIdentML_sax.py" -> converts MZML to CSV
 	"FDR.py" -> calculate Global FDR
-	"pAla.py" -> calculates decoy amino acid FLR
+		output: "FDR_output.csv"
 	"Post_analysis.py" 
-				-filter for FDR (default 0.01 or user specified)
-				-removes decoy and contam hits
-				-expands to site-based format (one row shows PSM with PTM score/position for one site on each **peptide**)
-				-only keep phospho sites	
+			-filter for FDR (default 0.01 or user specified)
+			-removes decoy and contam hits
+			-expands to site-based format (one row shows PSM with PTM score/position for one site on each **peptide**)
+			-only keep phospho sites
+		calls "pAla.py" -> calculates decoy amino acid FLR
+		output: "Site-based_FLR_pAla.csv"
 	"Binomial_adjusment.py" -> calculates pA FLR using Oscar's binomial method. 
 		outputs:
 		1) "binomial.csv"
