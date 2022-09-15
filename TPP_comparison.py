@@ -1,9 +1,11 @@
 import os
 import time
 import sys
+import glob
 
 import TPP_reusable.FDR as FDR
 import TPP_reusable.convert_mzIdentML_sax as convert_mzIdentML_sax
+import TPP_reusable.convert_mzIdentML_sax_MSFrag as convert_mzIdentML_sax_MSFrag
 import TPP_reusable.Post_analysis as Post_analysis
 import TPP_reusable.pAla as pAla
 import TPP_reusable.Binomial_adjustment as Binomial_adjustment
@@ -32,14 +34,22 @@ decoy_list = []
 results_file = mzid_file+".csv"
 
 if os.path.isfile(results_file):
-    print("mzid converted file exists")
+        print("XML converted file exists")
 else:
-    try:
-        print("Converting mzid file")
-        convert_mzIdentML_sax.convert(mzid_file)
-        print("mzid converted")
-    except ValueError:
-        raise ValueError("Please provide TPP '.mzid' results file")
+	xml = glob.glob("*.mzid")
+	try:
+		print("Converting XML file")
+		convert_mzIdentML_sax.convert(xml[0])
+	except ValueError:
+		raise ValueError("Please provide TPP '.mzid' results file")
+	if os.path.isfile(results_file):
+		print("XML converted")
+	else:
+		try:
+			convert_mzIdentML_sax_MSFrag.convert(xml[0])
+			print("XML converted")
+		except ValueError:
+			raise ValueError("Please provide TPP '.mzid' results file")
 # calculate FDR
 if not os.path.exists(sub):
     os.mkdir(sub)

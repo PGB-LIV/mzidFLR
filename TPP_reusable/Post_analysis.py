@@ -39,8 +39,8 @@ def explode(df, lst_cols, fill_value='', preserve_index=False):
 
 #Explode rows for each PSM postion - for each mod in peptide, a seperate row will show PSM score and corresponding PTM position/score for each site on the peptide
 def site_based(input, FDR_cutoff):
-    df = pd.read_csv(input, dtype={'Protein position': str, 'PTM Score':str, 'PTM positions':str})
-    df = df.loc[df['FDR'] <= FDR_cutoff]
+    df = pd.read_csv(input, dtype={'Protein position': str, 'PTM Score':str, 'PTM positions':str,'FDR':float})
+    df = df.loc[df['FDR'] <= float(FDR_cutoff)]
     df = df.sort_values(['Peptide', 'Score','PTM Score'], ascending=[True, True, True])
     df['All_Proteins']=df['Protein']
     df['All_USI']=df['USI']

@@ -78,20 +78,22 @@ def convert(input):
                     output.write(attributes["experimentalMassToCharge"]+",")
                     output.write(attributes["peptide_ref"] + ",")
                 if tag == "cvParam" and attributes["name"]=="Comet:expectation value":
-                    output.write(attributes["value"] + ",")
+                    output.write(+attributes["value"] + ",")
+                if tag == "userParam" and attributes["name"] == "MSFragger:expect":
+                    output.write(","+attributes["value"] + ",")
                 if tag == "cvParam" and attributes["name"]=="PSM-level probability":
                     output.write(attributes["value"]+",")
                 if tag=="cvParam" and attributes["name"]=="PTMProphet probability":
                     output.write(attributes["value"] + ";")
             if tag=="cvParam" and attributes["name"]=="retention time":
-                output.write(","+attributes["value"])
+                output.write(attributes["value"])
 
 
     pep_dict_name='IDML_peptidedict.csv'
     protein_dict_name='IDML_proteindict.csv'
     proteinID_dict_name='IDML_proteinIDdict.csv'
     temp_file_name="IDML2CSV_temp.csv"
-    final_file_name=input+".csv"
+    final_file_name="interact-ipro-ptm.pep.mzid.csv"
 
     output = open(temp_file_name, "w")
     output.close()
@@ -180,42 +182,31 @@ def convert(input):
             #protein_pre=protein_dict[peptide_temp].split(";")[2]
             #protein_post=protein_dict[peptide_temp].split(";")[3]
             protein.append(proteinID_dict[protein_temp])
-            evalue.append(data_row[5])
-            psm_prob.append(data_row[6])
+            evalue.append(data_row[7])
+            psm_prob.append(data_row[5])
+            rt.append(data_row[8])
             #start at 7, increase check for blank or ":" (ptm prophet), if blank next cell is RT, if ptm prophet result, next cell is RT
             #only taking first peptide for each spectrum
-            for i in range(7,(len(data_row))):
-                if ":" in data_row[i]:
-                    PTM_info_temp=[]
-                    PTM_info_list=""
-                    for p in data_row[i][:-1].split(";"):
-                        if p.split(":")[2] not in PTM_info_temp:
-                            PTM_info_temp.append(p.split(":")[2])
-                            PTM_info_list+=p+";"
-                    ptm_prob.append(PTM_info_list[:-1])
-                    rt.append(data_row[i+1])
-                    break
-                elif data_row[i]=="":
-                    rt.append(data_row[i+1])
-                    ptm_prob.append("")
-                    break
+            if ":" in data_row[6]:
+                PTM_info_temp=[]
+                PTM_info_list=""
+                for p in data_row[6][:-1].split(";"):
+                    if p.split(":")[2] not in PTM_info_temp:
+                        PTM_info_temp.append(p.split(":")[2])
+                        PTM_info_list+=p+";"
+                ptm_prob.append(PTM_info_list[:-1])
+            else:
+                ptm_prob.append("")
 
-    try:
-        df = pd.DataFrame({"Spectrum":spectrum,"Charge":z,"Calculated mass":calc_mass,"Experimental mass":mass_exp,"Peptide":peptide,"Modifications":mods,"Positions":pos,"Modification mass":mass,"Modification residue":res,
+    df = pd.DataFrame({"Spectrum":spectrum,"Charge":z,"Calculated mass":calc_mass,"Experimental mass":mass_exp,"Peptide":peptide,"Modifications":mods,"Positions":pos,"Modification mass":mass,"Modification residue":res,
                        "Protein":protein,"Protein position":protein_pos,"e-value":evalue,"PSM probability":psm_prob,"PTM info":ptm_prob,"Retention time":rt})
+    df.to_csv(final_file_name, index=False)
+    file.close()
 
-        df.to_csv(final_file_name, index=False)
-        file.close()
-        os.remove("IDML_peptidedict.csv")
-        os.remove("IDML_proteindict.csv")
-        os.remove("IDML_proteinIDdict.csv")
-        os.remove("IDML2CSV_temp.csv")
-    except:
-        file.close()
-        os.remove("IDML_peptidedict.csv")
-        os.remove("IDML_proteindict.csv")
-        os.remove("IDML_proteinIDdict.csv")
-        os.remove("IDML2CSV_temp.csv")
+    os.remove("IDML_peptidedict.csv")
+    os.remove("IDML_proteindict.csv")
+    os.remove("IDML_proteinIDdict.csv")
+    os.remove("IDML2CSV_temp.csv")
 
 
 
