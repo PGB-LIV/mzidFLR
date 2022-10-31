@@ -38,7 +38,7 @@ def explode(df, lst_cols, fill_value='', preserve_index=False):
     return res
 
 #Explode rows for each PSM postion - for each mod in peptide, a seperate row will show PSM score and corresponding PTM position/score for each site on the peptide
-def site_based(input, FDR_cutoff):
+def site_based(input, FDR_cutoff,mod):
     df = pd.read_csv(input, dtype={'Protein position': str, 'PTM Score':str, 'PTM positions':str,'FDR':float})
     df = df.loc[df['FDR'] <= float(FDR_cutoff)]
     df = df.sort_values(['Peptide', 'Score','PTM Score'], ascending=[True, True, True])
@@ -62,7 +62,8 @@ def site_based(input, FDR_cutoff):
     df = pd.concat([df3,df2])
     df['Protein position'] = df['Protein position'].str.split(';')
     df = explode(df, ['PTM', 'PTM Score', 'PTM positions', 'Protein position'], fill_value='')
-    df = df[df.PTM == "Phospho"]
+    #df = df[df.PTM == "Phospho"]
+    df = df.loc[df['PTM'].str.lower()==mod.lower()]
     df = df[~df.Protein.str.contains("DECOY")]
     df = df[~df.Protein.str.contains("CONTAM")]
     df = df.reset_index(drop=True)
@@ -70,10 +71,11 @@ def site_based(input, FDR_cutoff):
     df.to_csv(output,index=False)
 
 #model FLR from combined probability: 1-(PSM prob*PTM prob)/Count
-def model_FLR(file):
+def model_FLR(file,mod):
     df=pd.read_csv(file, dtype={'Score': float,'PTM Score':float})
     df = df[df['PTM positions'].notna()]
-    df = df[df.PTM == "Phospho"]
+    #df = df[df.PTM == "Phospho"]
+    df = df.loc[df['PTM'].str.lower()==mod.lower()]
     df = df[~df.Protein.str.contains("DECOY",na=False)]
     df = df[~df.Protein.str.contains("CONTAM",na=False)]
     df = df.reset_index(drop=True)

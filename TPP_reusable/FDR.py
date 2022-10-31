@@ -11,9 +11,9 @@ import matplotlib.pylab as plt
 import pandas as pd
 
 #calculate FDR
-def calculateFDR(results_file,output,PXD):
+def calculateFDR(results_file,output,PXD,mod):
     #extract results to df
-    df=Extract_DF.extract_PTMprophet_IDent_df(results_file,PXD)
+    df=Extract_DF.extract_PTMprophet_IDent_df(results_file,PXD,mod)
     df['Score']=df['Score'].astype(float)
     df=df.sort_values(by='Score',ascending=False)
     df=df.reset_index(drop=True)
@@ -32,6 +32,7 @@ def calculateFDR(results_file,output,PXD):
     #q_val = min FDR at this position or lower
     df['q_value']=df['FDR']
     df['q_value']=df.iloc[::-1]['FDR'].cummin()
+
     #return as csv
     df.to_csv(output,index=False)
 

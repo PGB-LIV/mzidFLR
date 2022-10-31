@@ -2,7 +2,7 @@ import pandas as pd
 import time
 
 #Extract PTM prophet output to df
-def extract_PTMprophet_IDent_df(input,PXD):
+def extract_PTMprophet_IDent_df(input,PXD,mod):
 	start_time=time.time()
 	all_peptide_mods=[]
 	PTMs=[]
@@ -17,9 +17,7 @@ def extract_PTMprophet_IDent_df(input,PXD):
 	df['Positions']=df['Positions'].astype(str)
 	df['Modification mass']=df['Modification mass'].astype(str)
 	counter=1
-	print("--- %s seconds ---" % (time.time() - start_time))
 	for i in range(len(df)):
-		#print(str(i)+"/"+str(len(df)))
 		if "unknown" in df.loc[i,'Modifications']:
 			mods_temp=df.loc[i,'Modifications'].split(";")
 			index=mods_temp.index('unknown_mod')
@@ -56,7 +54,7 @@ def extract_PTMprophet_IDent_df(input,PXD):
 					#for y in df.loc[i,'PTM info'].split(";"):
 						#if y.split(":")[2]==x:
 							#PTMscore_list+=y.split(":")[1]+";"
-				if z=="Phospho":
+				if z.lower()==mod.lower():
 					score_found="No"
 					for y in df.loc[i,'PTM info'].split(";"):
 						if y.split(":")[2]==x:

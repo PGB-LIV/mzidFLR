@@ -216,6 +216,3 @@ def convert(input):
         os.remove("IDML_proteindict.csv")
         os.remove("IDML_proteinIDdict.csv")
         os.remove("IDML2CSV_temp.csv")
-
-
-
