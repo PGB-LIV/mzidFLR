@@ -26,6 +26,8 @@ def calulate_decoy_FLR(input,decoy,targets):
                 if peptide[int(float(a))-1]==decoy:
                     pA_count+=1
                     df.loc[i,'DecoyP'] = 1
+                    if mod.lower()=="acetyl" and a==0:
+                        df.loc[i,'DecoyP'] = 0
                 else:
                     df.loc[i,'DecoyP'] = 0
         df.loc[i, 'p'+decoy+'_count'] = pA_count

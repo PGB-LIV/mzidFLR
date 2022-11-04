@@ -8,7 +8,7 @@ Also generates peptidoform site based format.
 
 *TPP_reusable* folder contains supported module code for the analysis of Datasets using TPP PTMprophet mzid output files.
 
-      $py TPP_comparison [mzid] [PXD] [optional:FDR filter(0-1)]	
+      $py python TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: PSM_FDR_cutoff]	
 
 
 ****Site_peptidoform_centric_format_no_pApeptidoforms.py****
@@ -24,7 +24,7 @@ Main script "TPP_comparison.py" calls modules:
 	"FDR.py" -> calculate Global FDR
 		output: "FDR_output.csv"
 	"Post_analysis.py" 
-			-filter for FDR (default 0.01 or user specified)
+			-filter for PSM FDR (default 0.01 or user specified)
 			-removes decoy and contam hits
 			-expands to site-based format (one row shows PSM with PTM score/position for one site on each **peptide**)
 			-only keep phospho sites

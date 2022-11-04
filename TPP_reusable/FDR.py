@@ -29,6 +29,11 @@ def calculateFDR(results_file,output,PXD,mod):
     #FDR = decoy_count/target_count
     df['FDR']= df['decoy_count']/df['target_count']
     df['FDR'] = df['FDR'].astype(float)
+
+    #warning for no decoys
+    if df['FDR'].max==0:
+        sys.exit("No decoys found - check decoy prefix")
+
     #q_val = min FDR at this position or lower
     df['q_value']=df['FDR']
     df['q_value']=df.iloc[::-1]['FDR'].cummin()
