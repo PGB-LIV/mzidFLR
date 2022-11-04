@@ -8,8 +8,7 @@ Also generates peptidoform site based format.
 
 *TPP_reusable* folder contains supported module code for the analysis of Datasets using TPP PTMprophet mzid output files.
 
-      $py python TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: PSM_FDR_cutoff]	
-
+	$py python TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: PSM_FDR_cutoff]
 
 ****Site_peptidoform_centric_format_no_pApeptidoforms.py****
 
