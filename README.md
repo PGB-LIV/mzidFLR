@@ -33,9 +33,9 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 		Filter for specified modification
 		Remove decoy and contaminant hits
 		Calculate model FLR
-		- 1-(PTMscore*PSMscore)/SiteCount
+		- 1-(PTMscore*PSMscore) / SiteCount
 		Calculate decoy FLR
-		- Ratio* DecoyCount /( SiteCount -DecoyCount)
+		- Ratio* DecoyCount / (SiteCount-DecoyCount)
 			Where ratio = TargetCount/DecoyCount (ie.STY/A) and DecoyCount=count of sites where peptidoform contains decoy modification, regardless of site
 		Input=FDR_output.csv
 		Output=Site-based_FLR.csv
