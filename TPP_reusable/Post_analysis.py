@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import re
 
 def explode(df, lst_cols, fill_value='', preserve_index=False):
     # make sure `lst_cols` is list-alike
@@ -67,6 +68,10 @@ def site_based(input, FDR_cutoff,mod):
     df = df[~df.Protein.str.contains("DECOY")]
     df = df[~df.Protein.str.contains("CONTAM")]
     df = df.reset_index(drop=True)
+    df['Peptide_pos']  = df['Peptide']+"-"+df['PTM positions'].astype(str)
+    df['PTM_final_prob'] = pd.to_numeric(df['Score']) * pd.to_numeric(df['PTM Score'])
+    df['Peptide']=df['Peptide'].astype(str)
+    df = df.sort_values(by=(['PTM_final_prob','Peptide','Peptide_pos']), ascending=[False,True,True])
     output = input.replace("FDR_output.csv", "Site-based.csv")
     df.to_csv(output,index=False)
 
@@ -79,8 +84,8 @@ def model_FLR(file,mod):
     df = df[~df.Protein.str.contains("DECOY",na=False)]
     df = df[~df.Protein.str.contains("CONTAM",na=False)]
     df = df.reset_index(drop=True)
-    df['PTM_final_prob'] = df['Score'] * df['PTM Score']
-    df = df.sort_values(by=(['PTM_final_prob']), ascending=[False])
+    df['Peptide']=df['Peptide'].astype(str)
+    df = df.sort_values(by=(['PTM_final_prob','Peptide','Peptide_pos']), ascending=[False,True,True])
     df = df.reset_index(drop=True)
     df['Count'] = (df.index) + 1
     df['final_temp'] = 1 - df['PTM_final_prob']
@@ -91,3 +96,54 @@ def model_FLR(file,mod):
     df = df.reset_index(drop=True)
     output=file.replace(".csv","_FLR.csv")
     df.to_csv(output,index=False)
+
+def peptidoform_to_peptide(file,mod):
+    df=pd.read_csv(file)
+    df['Peptide_mod_count'] = df['Peptide']+"_"+df['Peptide_mod'].str.count(mod).astype(str)
+    df['Prob'] = 1-df['Binomial_final_score']
+    df['Prod_prob'] = df.groupby('Protein-pos')['Prob'].transform('prod')
+    df['BA_score_new'] = 1-df['Prod_prob']
+    df['PepMeanScore'] = df.groupby('Peptide_mod')['BA_score_new'].transform('mean')
+    output_temp=file.replace("binomial_peptidoform_collapsed_FLR.csv","binomial_peptide_collapse_TEMP.csv")
+    df.to_csv(output_temp,index=False)
+    df = df.sort_values(by=(['Peptide_mod_count','PepMeanScore']), ascending=[False,True])
+    df_temp = df[df.PepMeanScore == df.PepMeanScore.groupby(df['Peptide_mod_count']).transform('max')]
+    print(len(df_temp))
+    peptidoform_list=df_temp['Peptide_mod'].to_list()
+    df=df[df['Peptide_mod'].isin(peptidoform_list)]
+    df = df.sort_values(by=(['Binomial_final_score','Peptide','Peptide_pos']), ascending=[False,True,True])
+    output=file.replace("binomial_peptidoform_collapsed_FLR.csv","binomial_peptide_collapse_FLR.csv")
+    df.to_csv(output,index=False)
+
+#calculate decoy FLR from decoy input
+def calulate_decoy_FLR(input,decoy,targets):
+    df = pd.read_csv(input,dtype={'PTM_positions': str})
+    STY_count=0
+    for target in list(targets):
+        T_count=df['Peptide'].str.count(target).sum()
+        STY_count+=T_count
+    A_count=df['Peptide'].str.count(decoy).sum()
+    STY_A_ratio=STY_count/A_count
+
+    pA_count = 0
+    df.fillna('-')
+    for i in range(len(df)):
+        if decoy+"[" in df.loc[i,'Peptide_mod']:
+            pA_count+=1
+            df.loc[i,'DecoyP'] = 1
+            if df.loc[i,'Peptide_mod'].startswith(decoy+"[Acetyl]"):
+                df.loc[i,'DecoyP'] = 0
+                pA_count-=1
+        else:
+            df.loc[i,'DecoyP'] = 0
+
+
+        df.loc[i, 'p'+decoy+'_count'] = pA_count
+        #decoy pX_FLR = STY:X ratio * pX_count * 2 / Count
+        #df.loc[i,'p'+decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count']*2)/(i+1)
+        #df.loc[i,'p'+decoy+'_FLR']=((STY_A_ratio*df.loc[i,'p'+decoy+'_count'])+df.loc[i,'p'+decoy+'_count'])/(i+1)
+        df.loc[i,'p'+decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count'])/(i+1-df.loc[i,'p'+decoy+'_count'])
+
+    df['p'+decoy+'_q_value'] = df['p'+decoy+'_FLR']
+    df['p'+decoy+'_q_value'] = df.iloc[::-1]['p'+decoy+'_FLR'].cummin()
+    df.to_csv(input,index=False)

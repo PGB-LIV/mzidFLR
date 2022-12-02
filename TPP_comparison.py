@@ -31,7 +31,7 @@ except:
     FDR_cutoff=0.01
     print("FDR cutoff not specified, 0.01 default FDR cutoff used")
 
-sub = "FDR_" + str(FDR_cutoff)
+sub = "FDR_updated_" + str(FDR_cutoff)
 decoy_list = []
 
 results_file = mzid_file+".csv"
@@ -70,9 +70,14 @@ print("--- %s seconds ---" % (time.time() - start_time))
 # Post analysis - FLR calulations and plots
 Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod)
 Post_analysis.model_FLR(sub + "/" + "Site-based.csv",mod)
-pAla.calulate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy,targets)
+Post_analysis.calulate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy,targets)
 Binomial_adjustment.Binomial(sub + "/" + "Site-based_FLR_p" + decoy + ".csv",decoy, targets)
-print("FLR calculations done --- %s seconds ---" % (time.time() - start_time))
+
+#Peptidoform to peptide
+Post_analysis.peptidoform_to_peptide(sub+"/"+"binomial_peptidoform_collapsed_FLR.csv",mod)
+Binomial_adjustment.calulate_decoy_FLR(sub+"/"+"binomial_peptide_collapse_FLR.csv",decoy,targets)
+
+print("Workflow complete --- %s seconds ---" % (time.time() - start_time))
 
 os.remove(sub+"/Site-based.csv")
 os.remove(sub+"/Site-based_FLR.csv")

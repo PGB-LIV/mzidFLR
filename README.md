@@ -20,23 +20,41 @@ Used for creating site based peptidoform format.
 
 Main script "TPP_comparison.py" calls modules:
 
-	"convert_mzIdentML_sax.py" -> converts MZML to CSV
-	"FDR.py" -> calculate Global FDR
-		output: "FDR_output.csv"
-	"Post_analysis.py" 
-			-filter for FDR (default 0.01 or user specified)
-			-removes decoy and contam hits
-			-expands to site-based format (one row shows PSM with PTM score/position for one site on each **peptide**)
-			-only keep phospho sites
-		calls "pAla.py" -> calculates decoy amino acid FLR
-		output: "Site-based_FLR_pAla.csv"
-	"Binomial_adjusment.py" -> calculates pA FLR using Oscar's binomial method. 
-		outputs:
-		1) "binomial.csv"
-				-binomial FLR calculated
-				-all hits
-		2) "binomial_collapsed_FLR.csv"
-				-collapsed on peptide position
+Convert_mzIdentML_sax(_MSFrag).py
+	Converts mzid file to csv for downstream analysis
+	Input = *.mzid
+	Output = *.mzid.csv
+FDR.py
+	PSM level FDR (decoy/target count)
+	- FDR.jpg – PSM count vs PSM level FDR (with q-value trend)
+	- FDR_score.jpg – Peptide probability vs global FDR
+	Calculate mass tolerance
+	- PPM_error_FDR.jpg – PSM probability vs PPM error
+	Input=*.mzid.csv
+	Output=FDR_output.csv
+Post_analysis.py
+	Filter for PSM level FDR (default = 0.01 or specified threshold)
+	Expand to site based format – one site per row
+	Filter for specified modification
+	Remove decoy and contaminant hits
+	Calculate model FLR
+	- 1-(PTMscore*PSMscore)/SiteCount
+	Calculate decoy FLR
+	- Ratio* DecoyCount /( SiteCount -DecoyCount)
+		Where ratio = TargetCount/DecoyCount (ie.STY/A) and DecoyCount=count of sites where peptidoform contains decoy modification, regardless of site
+	Input=FDR_output.csv
+	Output=Site-based_FLR.csv
+Binomial_adjustment.py
+	Binomial correction 
+	- P_x=(n¦x) p^x q^(n-x)
+		P=sum of unique PSMs containing decoy modification/sum of unique PSMs
+		X=modified site count
+		N=count site seen, modified or not
+	Collapse by peptidoform site
+	Recalculate model FLR 
+	Recalculate decoy FLR
+	Input=Site-based_FLR.csv
+	Output=binomial_peptidoform_collapsed_FLR.csv
 
 Site based format "Site_peptidoform_centric_format_no_pApeptidoforms.py":
 
