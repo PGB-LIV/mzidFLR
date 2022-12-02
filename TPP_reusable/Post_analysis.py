@@ -104,8 +104,6 @@ def peptidoform_to_peptide(file,mod):
     df['Prod_prob'] = df.groupby('Protein-pos')['Prob'].transform('prod')
     df['BA_score_new'] = 1-df['Prod_prob']
     df['PepMeanScore'] = df.groupby('Peptide_mod')['BA_score_new'].transform('mean')
-    output_temp=file.replace("binomial_peptidoform_collapsed_FLR.csv","binomial_peptide_collapse_TEMP.csv")
-    df.to_csv(output_temp,index=False)
     df = df.sort_values(by=(['Peptide_mod_count','PepMeanScore']), ascending=[False,True])
     df_temp = df[df.PepMeanScore == df.PepMeanScore.groupby(df['Peptide_mod_count']).transform('max')]
     print(len(df_temp))

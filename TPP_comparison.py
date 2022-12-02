@@ -74,8 +74,8 @@ Post_analysis.calulate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy,targets)
 Binomial_adjustment.Binomial(sub + "/" + "Site-based_FLR_p" + decoy + ".csv",decoy, targets)
 
 #Peptidoform to peptide
-Post_analysis.peptidoform_to_peptide(sub+"/"+"binomial_peptidoform_collapsed_FLR.csv",mod)
-Binomial_adjustment.calulate_decoy_FLR(sub+"/"+"binomial_peptide_collapse_FLR.csv",decoy,targets)
+#Post_analysis.peptidoform_to_peptide(sub+"/"+"binomial_peptidoform_collapsed_FLR.csv",mod)
+#Binomial_adjustment.calulate_decoy_FLR(sub+"/"+"binomial_peptide_collapse_FLR.csv",decoy,targets)
 
 print("Workflow complete --- %s seconds ---" % (time.time() - start_time))
 
