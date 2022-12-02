@@ -20,7 +20,7 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 		Input = *.mzid
 		Output = *.mzid.csv
 	FDR.py
-		PSM level FDR (decoy/target count)
+		Calculate PSM level FDR (decoy/target count)
 		- FDR.jpg – PSM count vs PSM level FDR (with q-value trend)
 		- FDR_score.jpg – Peptide probability vs global FDR
 		Calculate mass tolerance
@@ -36,7 +36,8 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 		- 1-(PTMscore*PSMscore) / SiteCount
 		Calculate decoy FLR
 		- Ratio* DecoyCount / (SiteCount-DecoyCount)
-			Where ratio = TargetCount/DecoyCount (ie.STY/A) and DecoyCount=count of sites where peptidoform contains decoy modification, regardless of site
+			Ratio = TargetCount/DecoyCount (ie.STY/A) 
+			DecoyCount=count of sites where peptidoform contains decoy modification, regardless of site
 		Input=FDR_output.csv
 		Output=Site-based_FLR.csv
 	Binomial_adjustment.py
