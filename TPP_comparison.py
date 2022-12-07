@@ -7,7 +7,6 @@ import TPP_reusable.FDR as FDR
 import TPP_reusable.convert_mzIdentML_sax as convert_mzIdentML_sax
 import TPP_reusable.convert_mzIdentML_sax_MSFrag as convert_mzIdentML_sax_MSFrag
 import TPP_reusable.Post_analysis as Post_analysis
-import TPP_reusable.pAla as pAla
 import TPP_reusable.Binomial_adjustment as Binomial_adjustment
 
 start_time = time.time()
