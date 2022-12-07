@@ -7,7 +7,7 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 
 *TPP_reusable* folder contains supported module code for the analysis of Datasets using TPP PTMprophet mzid output files.
 
-      $py TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy]] [optional: PSM_FDR_cutoff]	
+      $py TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: modification:mass(2dp)] [optional: FDR_cutoff]
 
 ![Workflow_image](https://user-images.githubusercontent.com/57440286/205335117-e3eea3e7-371c-4736-9d7a-2baf0f10996f.jpg)
 
@@ -30,7 +30,7 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 	Post_analysis.py
 		Filter for PSM level FDR (default = 0.01 or specified threshold)
 		Expand to site based format – one site per row
-		Filter for specified modification
+		Filter for specified modification (based on mzid MS name, if unknown mod use optional mod mass mapping [optional: modification:mass(2dp)])
 		Remove decoy and contaminant hits
 		Calculate model FLR
 		- 1-(PTMscore*PSMscore) / SiteCount
