@@ -8,9 +8,10 @@ import numpy as np
 import matplotlib.pylab as plt
 import pandas as pd
 import time
+import sys
 
 #Extract PTM prophet output to df
-def extract_PTMprophet_IDent_df(input,PXD,mod):
+def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
     start_time=time.time()
     all_peptide_mods=[]
     PTMs=[]
@@ -18,7 +19,6 @@ def extract_PTMprophet_IDent_df(input,PXD,mod):
     PTM_scores=[]
     mass_shift=[]
     protein_positions=[]
-
     df = pd.read_csv(input)
     df['PTM info']=df['PTM info'].fillna("")
     df['Modifications']=df['Modifications'].astype(str)
@@ -26,11 +26,19 @@ def extract_PTMprophet_IDent_df(input,PXD,mod):
     df['Modification mass']=df['Modification mass'].astype(str)
     counter=1
     for i in range(len(df)):
-        if "unknown" in df.loc[i,'Modifications']:
+        while "unknown" in df.loc[i,'Modifications']:
             mods_temp=df.loc[i,'Modifications'].split(";")
             index=mods_temp.index('unknown_mod')
             mods_temp[index]=str(df.loc[i, 'Modification mass'].split(";")[index])
             df.loc[i,'Modifications']=";".join([str(x)for x in mods_temp])
+
+            #replace specified mod mass with specified mod, round to 2dp
+            for m in df.loc[i,'Modifications'].split(";"):
+                try:
+                    if round(float(m),2)==round(float(mod_mass_id),2):
+                        df.loc[i,'Modifications']=df.loc[i,'Modifications'].replace(m,mod_id)
+                except:
+                    continue
         peptide_temp=df.loc[i,'Peptide']
         mod_mass=0
         if df.loc[i,'PTM info']!="":
@@ -89,9 +97,9 @@ def extract_PTMprophet_IDent_df(input,PXD,mod):
     return(df2)
 
 #calculate FDR
-def calculateFDR(results_file,output,PXD,mod):
+def calculateFDR(results_file,output,PXD,mod, mod_id, mod_mass):
     #extract results to df
-    df=extract_PTMprophet_IDent_df(results_file,PXD,mod)
+    df=extract_PTMprophet_IDent_df(results_file,PXD,mod, mod_id, mod_mass)
     df['Score']=df['Score'].astype(float)
     df=df.sort_values(by='Score',ascending=False)
     df=df.reset_index(drop=True)

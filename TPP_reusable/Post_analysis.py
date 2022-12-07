@@ -2,10 +2,8 @@
 
 
 import pandas as pd
-import matplotlib.pyplot as plt
-import os
 import numpy as np
-import re
+import sys
 
 def explode(df, lst_cols, fill_value='', preserve_index=False):
     # make sure `lst_cols` is list-alike
@@ -81,6 +79,8 @@ def model_FLR(file,mod):
     df = df[df['PTM positions'].notna()]
     #df = df[df.PTM == "Phospho"]
     df = df.loc[df['PTM'].str.lower()==mod.lower()]
+    if len(df)==0:
+        sys.exit("Modification not found, check spelling or try specifiying modification name and mass to 2dp (eg. Phospho:79.97) \n TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
     df = df[~df.Protein.str.contains("DECOY",na=False)]
     df = df[~df.Protein.str.contains("CONTAM",na=False)]
     df = df.reset_index(drop=True)
