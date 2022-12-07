@@ -1,11 +1,9 @@
 #Calculate false detection rate statistics and plots
-#-Calls Extract_DF
 #	Loads CSV file to dataframe for FDR calculations
 #Writes folder for downstream analysis eg. "FDR_0.01_PTM_score_0" FDR filter 0.01, no PTM score filter
 #output="FDR_output.csv","FDR.jpg","FDR_filter.jpg","FDR_score.jpg"
 
-	
-import TPP_reusable.Extract_DF as Extract_DF
+
 import numpy as np
 import matplotlib.pylab as plt
 import pandas as pd
