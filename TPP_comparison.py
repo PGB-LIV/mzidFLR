@@ -46,20 +46,19 @@ decoy_list = []
 results_file = mzid_file+".csv"
 
 if os.path.isfile(results_file):
-        print("XML converted file exists")
+        print("mzid converted file exists")
 else:
-	xml = glob.glob("*.mzid")
 	try:
-		print("Converting XML file")
-		convert_mzIdentML_sax.convert(xml[0])
+		print("Converting mzid file")
+		convert_mzIdentML_sax.convert(mzid_file)
 	except ValueError:
 		raise ValueError("Please provide TPP '.mzid' results file")
 	if os.path.isfile(results_file):
-		print("XML converted")
+		print("mzid converted")
 	else:
 		try:
-			convert_mzIdentML_sax_MSFrag.convert(xml[0])
-			print("XML converted")
+			convert_mzIdentML_sax_MSFrag.convert(mzid_file)
+			print("mzid converted")
 		except ValueError:
 			raise ValueError("Please provide TPP '.mzid' results file")
 # calculate FDR
