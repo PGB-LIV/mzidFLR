@@ -88,4 +88,4 @@ Binomial_adjustment.calulate_decoy_FLR(sub+"/"+"binomial_peptide_collapse_FLR.cs
 
 print("Workflow complete --- %s seconds ---" % (time.time() - start_time))
 
-os.remove(sub+"/Site-based_FLR.csv")
+os.remove(sub+"/Site-based.csv")
