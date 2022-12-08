@@ -16,7 +16,7 @@ def calulate_decoy_FLR(input,decoy,targets):
         if decoy+"[" in df.loc[i,'Peptide_mod']:
             pA_count+=1
             df.loc[i,'DecoyP'] = 1
-            if df.loc[i,'Peptide_mod'].startswith(decoy+"[Acetyl]"):
+            if df.loc[i,'Peptide_mod'].startswith(decoy+"[Acetyl]") and df.loc[i,'Protein position']==2:
                 df.loc[i,'DecoyP'] = 0
                 pA_count-=1
         else:
