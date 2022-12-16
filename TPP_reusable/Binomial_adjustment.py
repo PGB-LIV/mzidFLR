@@ -1,8 +1,11 @@
 import pandas as pd
 from scipy.stats import binom
 import numpy as np
+import time
 
 def calulate_decoy_FLR(input,decoy,targets):
+    print("Running: Bimonial calulate_decoy_FLR")
+    start_time = time.time()
     df = pd.read_csv(input,dtype={'PTM_positions': str})
     STY_count=0
     for target in list(targets):
@@ -31,8 +34,11 @@ def calulate_decoy_FLR(input,decoy,targets):
     df['p'+decoy+'_q_value_BA'] = df['p'+decoy+'_FLR_BA']
     df['p'+decoy+'_q_value_BA'] = df.iloc[::-1]['p'+decoy+'_FLR_BA'].cummin()
     df.to_csv(input,index=False)
+    print("Complete --- %s seconds ---" % (time.time() - start_time))
 
 def model_FLR_binomial(file,FLR_output):
+    print("Running: model_FLR_binomial")
+    start_time = time.time()
     df=pd.read_csv(file)
     df = df.sort_values(['Binomial_final_score','Peptide','Peptide_pos'], ascending=[True, True,True])
     USI_list = []
@@ -86,9 +92,16 @@ def model_FLR_binomial(file,FLR_output):
     df = df.drop(['final_temp'], axis=1)
     df = df.reset_index(drop=True)
     df.to_csv(FLR_output,index=False)
+    print("Complete --- %s seconds ---" % (time.time() - start_time))
 
+def prot_occ(df,protein,pos):
+    df_temp=df.loc[(df['Protein']==protein) & (df['Peptide_start_Protein']<=pos) & (df['Peptide_end_Protein']>=pos)]
+    df_temp=df_temp.drop_duplicates(subset=(['USI']),keep='last',inplace=False)
+    return(len(df_temp))
 
 def Binomial(file,decoy, targets):
+    print("Running: Binomial")
+    start_time = time.time()
     d="/".join(file.split("/")[:-1])
     output = d+"/binomial.csv"
     FLR_output = d+"/binomial_peptidoform_collapsed_FLR.csv"
@@ -101,13 +114,26 @@ def Binomial(file,decoy, targets):
     df = df.sort_values(by=(['Protein','Protein position']), ascending=[False,True])
     df['Protein_loc'] = df.groupby('Protein-pos')['Protein-pos'].transform('count')
     counter=1
-    for i in range(len(df)):
-        protein=df.loc[i,'Protein-pos'].rsplit("-",1)[0]
-        pos=int(df.loc[i,'Protein-pos'].rsplit("-",1)[-1])
+
+    #dict of occ for protein-pos
+    occ_dict = {}
+    for p in df['Protein-pos'].unique():
+        protein=p.rsplit("-",1)[0]
+        pos=int(p.rsplit("-",1)[-1])
         df_temp=df.loc[(df['Protein']==protein) & (df['Peptide_start_Protein']<=pos) & (df['Peptide_end_Protein']>=pos)]
         df_temp=df_temp.drop_duplicates(subset=(['USI']),keep='last',inplace=False)
-        df.loc[i,'Protein_occ']=len(df_temp)
-        counter+=1
+        occ=len(df_temp)
+        occ_dict[p]=occ
+
+    # for i in range(len(df)):
+    #     protein=df.loc[i,'Protein-pos'].rsplit("-",1)[0]
+    #     pos=int(df.loc[i,'Protein-pos'].rsplit("-",1)[-1])
+    #     df_temp=df.loc[(df['Protein']==protein) & (df['Peptide_start_Protein']<=pos) & (df['Peptide_end_Protein']>=pos)]
+    #     df_temp=df_temp.drop_duplicates(subset=(['USI']),keep='last',inplace=False)
+    #     df.loc[i,'Protein_occ']=len(df_temp)
+    #df['Protein_occ']=df.apply(lambda row: prot_occ(df,row['Protein'],row['Protein position']),axis=1)
+    df['Protein_occ']=df['Protein-pos'].map(occ_dict)
+    counter+=1
     #prob_chance=df['pA_count'].max()/len(df) #/number of PSMs not sites
     unique_USIs=df['USI'].unique()
     prob_chance=sum(decoy+"[" in s for s in unique_USIs)/len(unique_USIs)
@@ -124,6 +150,7 @@ def Binomial(file,decoy, targets):
     df['Peptide']=df['Peptide'].astype(str)
     df = df.sort_values(by=(['Binomial_final_score','Peptide','Peptide_pos']), ascending=[False,True,True])
     df.to_csv(output,index=False)
+    print("Complete --- %s seconds ---" % (time.time() - start_time))
 
     model_FLR_binomial(output,FLR_output)
     calulate_decoy_FLR(FLR_output,decoy,targets)
