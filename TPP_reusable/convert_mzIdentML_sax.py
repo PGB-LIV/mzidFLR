@@ -166,6 +166,9 @@ def convert(input):
             for i in range(0,len(mod_list)):
                 mod_pos+=mod_list[i].split(";")[0]+";"
                 mod_res+=mod_list[i].split(";")[1]+";"
+                #if mod_list[i].split(";")[2]=="":
+                #    mod_mass+="0;"
+                #else:
                 mod_mass+=mod_list[i].split(";")[2]+";"
                 if mod_list[i].split(";")[3]=="":
                     mod_names+="unknown_mod;"

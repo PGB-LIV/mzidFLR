@@ -38,7 +38,8 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
         #replace specified mod mass with specified mod, round to 2dp
         df['Modifications']=df.apply(lambda x: r(x.Modifications, x.Mods_replace), axis=1)
 
-    df['Modifications']=df['Modifications'].str.replace(str(round(float(mod_mass_id),2)),mod_id, regex=True)
+    if mod_id!="NA" and mod_mass_id!="NA":
+        df['Modifications']=df['Modifications'].str.replace(str(round(float(mod_mass_id),2)),mod_id, regex=True)
 
     # while "unknown" in df.loc[i,'Modifications']:
         #     mods_temp=df.loc[i,'Modifications'].split(";")
@@ -87,7 +88,8 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
                             score_found="Yes"
                     if score_found=="No":
                         PTMscore_list+="0;"
-                        print("CHECK: "+ df.loc[i,"Spectrum"])
+                        if z!="Acetyl":
+                            print("CHECK: "+ df.loc[i,"Spectrum"])
                 else:
                     PTMscore_list += "0;"
         PTM_scores.append(PTMscore_list[:-1])
@@ -95,7 +97,9 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
         #df.loc[i,'USI']="mzspec:" + PXD + ":" + df.loc[i,'Spectrum'].split(".")[0]  + ":scan:" + df.loc[i,'Spectrum'].split(".")[1] + ":" + peptide_temp + "/" + str(df.loc[i,'Charge'])
         #df.loc[i,'Sources'] = df.loc[i,'Spectrum'].split(".")[0]
     #print("--- %s seconds ---" % (time.time() - start_time))
-    df['Mass_shift']=df['Modification mass'].apply(lambda x: sum(list(map(float,x.split(";")[:-1]))) if x!="" else "")
+    df['Modification mass']=df['Modification mass'].str.replace(";;",";")
+    df['Modification mass']=df['Modification mass'].str.lstrip(";")
+    df['Mass_shift']=df['Modification mass'].apply(lambda x: sum(list(map(float,x.split(";")[:-1]))) if x!=";" and x!="" else "")
     df['mass_diff'] = df['Calculated mass']-df['Experimental mass']
     df['ppm_error'] = (((df['mass_diff']) / df['Calculated mass']) * 1e6)
     df2 = pd.DataFrame({"Peptide_mod": all_peptide_mods, "Peptide":df['Peptide'].values , "Protein":df['Protein'].values, "Score":df['PSM probability'].values, "PTM":PTMs ,
@@ -105,10 +109,10 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
     df2["USI"]="mzspec:"+PXD+":"+df2['Spectrum'].str.split(".").str[0] +":scan:"+df2['Spectrum'].str.split(".").str[1]+":"+df2['Peptide_mod']+"/"+df2['Charge'].astype(str)
     df2['Source'] = df2['Spectrum'].str.split(".").str[0]
     #replace weird mods which cause issues with USI validation
+    df2=df2.replace("pryo","pyro", regex=True)
     df2=df2.replace("Q\[Pyro_glu\]","Q[Gln->pyro-Glu]", regex=True)
     df2=df2.replace("E\[Pyro_glu\]","E[Glu->pyro-Glu]", regex=True)
     df2=df2.replace("C\[Pyro_glu\]","C[Ammonia-loss]", regex=True)
-    df2=df2.replace("pryo","pyro", regex=True)
     df2=df2.replace("Carbamidomethylation","Carbamidomethyl", regex=True)
     df2=df2.replace("346.212775","iTRAQ8plex", regex=True)
     df2=df2.replace("346.212800","iTRAQ8plex", regex=True)
@@ -119,7 +123,7 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
     print("complete --- %s seconds ---" % (time.time() - start_time))
 
 #calculate FDR
-def calculateFDR(results_file,output,PXD,mod, mod_id, mod_mass):
+def calculateFDR(results_file,output,PXD,mod, mod_id, mod_mass, verbose):
     print("Running: CalculateFDR")
     start_time = time.time()
     #extract results to df
@@ -148,9 +152,6 @@ def calculateFDR(results_file,output,PXD,mod, mod_id, mod_mass):
     df['q_value']=df['FDR']
     df['q_value']=df.iloc[::-1]['FDR'].cummin()
 
-    #return as csv
-    df.to_csv(output,index=False)
-
     #FDR plots
     ax1=df.plot.scatter(x='FDR',y='row_count')
     ax2=df.plot.line(x='q_value',y='row_count')
@@ -162,6 +163,14 @@ def calculateFDR(results_file,output,PXD,mod, mod_id, mod_mass):
     plt.ylabel("Global FDR")
     plt.savefig('FDR_score.jpg',dpi=300)
     plt.close('all')
+
+    #return as csv
+    if verbose:
+        verbose_out=output.replace(".csv","_verbose.csv")
+        df.to_csv(verbose_out,index=False)
+    df=df.drop(["Decoy","decoy_count","row_count","target_count"], axis=1)
+    df.to_csv(output,index=False)
+
     print("Complete --- %s seconds ---" % (time.time() - start_time))
 
 

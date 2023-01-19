@@ -11,28 +11,38 @@ import TPP_reusable.Binomial_adjustment as Binomial_adjustment
 
 start_time = time.time()
 
+#--verbose function
+opts = [opt for opt in sys.argv[1:] if opt.startswith("-")]
+if len(opts)==1 and opts[0]=="--verbose":
+	print("Using verbose mode")
+	verbose=True
+else:
+	verbose=False
+#everything else args, handled below
+args = [arg for arg in sys.argv[1:] if not arg.startswith("-")]
+
 mod_id="NA"
 mod_mass="NA"
 #TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]
-if len(sys.argv)<3 or len(sys.argv)>6:
+if len(args)<3 or len(args)>6:
     sys.exit("Provide mzid file, PXD identifier and modification of interest. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
-mzid_file=sys.argv[1]
+mzid_file=args[0]
 if mzid_file[-5:]!=".mzid":
     print(mzid_file[-5:])
     sys.exit("Provide mzid file. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
-PXD = sys.argv[2]
+PXD = args[1]
 if "PXD" not in PXD:
     sys.exit("Provide PXD identifier. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
-mod_info = sys.argv[3]
+mod_info = args[2]
 if len(mod_info.split(":"))!=3:
 	sys.exit("Provide modification in format modification:target:decoy. E.g. Phospho:STY:A. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
 try:
-	FDR_cutoff = sys.argv[4]
+	FDR_cutoff = args[3]
 	if ":" in FDR_cutoff:
 		mod_id=FDR_cutoff.split(":")[0]
 		mod_mass=FDR_cutoff.split(":")[1]
 		try:
-			FDR_cutoff = sys.argv[5]
+			FDR_cutoff = args[4]
 		except:
 			FDR_cutoff=0.01
 			print("PSM FDR cutoff not specified, 0.01 default PSM FDR cutoff used")
@@ -70,21 +80,24 @@ targets=mod_info.split(":")[1]
 decoy=mod_info.split(":")[2]
 print("Starting FDR calculations")
 print("--- %s seconds ---" % (time.time() - start_time))
-FDR.calculateFDR(results_file, FDR_output, PXD, mod, mod_id, mod_mass)
+FDR.calculateFDR(results_file, FDR_output, PXD, mod, mod_id, mod_mass, verbose)
 FDR.ppm_error(FDR_output)
 print("FDR calculation done")
 print("Starting FLR calculations")
 print("--- %s seconds ---" % (time.time() - start_time))
 # Post analysis - FLR calulations and plots
-Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod)
-Post_analysis.model_FLR(sub + "/" + "Site-based.csv",mod)
-Post_analysis.calulate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy,targets)
-Binomial_adjustment.Binomial(sub + "/" + "Site-based_FLR.csv",decoy, targets)
+Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod,verbose)
+Post_analysis.model_FLR(sub + "/" + "Site-based.csv",mod,verbose)
+Post_analysis.calculate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy,targets, verbose)
+Binomial_adjustment.Binomial(sub + "/" + "Site-based_FLR.csv",decoy, targets, verbose)
 
 #Peptidoform to peptide
-Post_analysis.peptidoform_to_peptide(sub+"/"+"binomial_peptidoform_collapsed_FLR.csv",mod)
-Binomial_adjustment.calulate_decoy_FLR(sub+"/"+"binomial_peptide_collapse_FLR.csv",decoy,targets)
+Post_analysis.peptidoform_to_peptide(sub+"/"+"binomial_peptidoform_collapsed_FLR.csv",mod, verbose)
+Binomial_adjustment.calulate_decoy_FLR(sub+"/"+"binomial_peptide_collapsed_FLR.csv",decoy,targets,verbose)
 
 print("Workflow complete --- %s seconds ---" % (time.time() - start_time))
 
-os.remove(sub+"/Site-based.csv")
+try:
+	os.remove(sub+"/Site-based.csv")
+except:
+	os.remove(sub+"/Site-based_verbose.csv")

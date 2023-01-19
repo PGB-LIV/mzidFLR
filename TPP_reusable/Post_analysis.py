@@ -42,9 +42,13 @@ def explode(df, lst_cols, fill_value='', preserve_index=False):
     return res
 
 #Explode rows for each PSM postion - for each mod in peptide, a seperate row will show PSM score and corresponding PTM position/score for each site on the peptide
-def site_based(input, FDR_cutoff,mod):
+def site_based(input,FDR_cutoff,mod,verbose):
     print("Running: site_based")
     start_time = time.time()
+    if verbose:
+        output=input.replace("FDR_output", "Site-based_verbose")
+    else:
+        output = input.replace("FDR_output", "Site-based")
     df = pd.read_csv(input, dtype={'Protein position': str, 'PTM Score':str, 'PTM positions':str,'FDR':float})
     df = df.loc[df['FDR'] <= float(FDR_cutoff)]
     df = df.sort_values(['Peptide', 'Score','PTM Score'], ascending=[True, True, True])
@@ -77,14 +81,15 @@ def site_based(input, FDR_cutoff,mod):
     df['PTM_final_prob'] = pd.to_numeric(df['Score']) * pd.to_numeric(df['PTM Score'])
     df['Peptide']=df['Peptide'].astype(str)
     df = df.sort_values(by=(['PTM_final_prob','Peptide','Peptide_pos']), ascending=[False,True,True])
-    output = input.replace("FDR_output.csv", "Site-based.csv")
     df.to_csv(output,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
 
 #model FLR from combined probability: 1-(PSM prob*PTM prob)/Count
-def model_FLR(file,mod):
+def model_FLR(file,mod,verbose):
     print("Running: Model_FLR")
     start_time = time.time()
+    if verbose:
+        file=file.replace(".csv","_verbose.csv")
     df=pd.read_csv(file, dtype={'Score': float,'PTM Score':float})
     df = df[df['PTM positions'].notna()]
     #df = df[df.PTM == "Phospho"]
@@ -108,9 +113,11 @@ def model_FLR(file,mod):
     df.to_csv(output,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
 
-def peptidoform_to_peptide(file,mod):
+def peptidoform_to_peptide(file,mod,verbose):
     print("Running: peptidoform_to_peptide")
     start_time = time.time()
+    if verbose:
+        file=file.replace(".csv","_verbose.csv")
     df=pd.read_csv(file)
     df['Peptide_mod_count'] = df['Peptide']+"_"+df['Peptide_mod'].str.count(mod).astype(str)
     df['Prob'] = 1-df['Binomial_final_score']
@@ -123,14 +130,22 @@ def peptidoform_to_peptide(file,mod):
     peptidoform_list=df_temp['Peptide_mod'].to_list()
     df=df[df['Peptide_mod'].isin(peptidoform_list)]
     df = df.sort_values(by=(['Binomial_final_score','Peptide','Peptide_pos']), ascending=[False,True,True])
-    output=file.replace("binomial_peptidoform_collapsed_FLR.csv","binomial_peptide_collapse_FLR.csv")
+    output=file.replace("binomial_peptidoform_collapsed","binomial_peptide_collapsed")
+
+    #return as csv
+    if verbose:
+        df.to_csv(output,index=False)
+    df=df.drop(["Peptide_mod_count","Prob","Prod_prob","BA_score_new","PepMeanScore"], axis=1)
     df.to_csv(output,index=False)
+
     print("Complete--- %s seconds ---" % (time.time() - start_time))
 
 #calculate decoy FLR from decoy input
-def calulate_decoy_FLR(input,decoy,targets):
+def calculate_decoy_FLR(input,decoy,targets, verbose):
     print("Running: calculate_decoy_FLR")
     start_time = time.time()
+    if verbose:
+        input=input.replace("Site-based_FLR.csv","Site-based_verbose_FLR.csv")
     df = pd.read_csv(input,dtype={'PTM_positions': str})
     STY_count=0
     for target in list(targets):
@@ -160,5 +175,10 @@ def calulate_decoy_FLR(input,decoy,targets):
 
     df['p'+decoy+'_q_value'] = df['p'+decoy+'_FLR']
     df['p'+decoy+'_q_value'] = df.iloc[::-1]['p'+decoy+'_FLR'].cummin()
+
+    #return as csv
+    if verbose:
+        df.to_csv(input,index=False)
+    df=df.drop(["Count","DecoyP","pA_count",], axis=1)
     df.to_csv(input,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
