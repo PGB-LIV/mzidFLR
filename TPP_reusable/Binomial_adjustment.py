@@ -40,8 +40,9 @@ def calulate_decoy_FLR(input,decoy,targets, verbose):
     #return as csv
     if verbose:
         df.to_csv(input,index=False)
-    df=df.drop(["DecoyP",'p'+decoy+'_count'], axis=1)
-    df.to_csv(input,index=False)
+    else:
+        df=df.drop(["DecoyP",'p'+decoy+'_count'], axis=1)
+        df.to_csv(input,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
 
 def model_FLR_binomial(file,FLR_output):
@@ -49,45 +50,65 @@ def model_FLR_binomial(file,FLR_output):
     start_time = time.time()
     df=pd.read_csv(file)
     df = df.sort_values(['Binomial_final_score','Peptide','Peptide_pos'], ascending=[True, True,True])
-    USI_list = []
-    PSM_threshold = []
-    sig1=[]
-    sig2=[]
-    sig3=[]
-    sig4=[]
-    sig5=[]
-    sig6=[]
+    # USI_list = []
+    # PSM_threshold = []
+    # sig1=[]
+    # sig2=[]
+    # sig3=[]
+    # sig4=[]
+    # sig5=[]
+    # sig6=[]
     df['Peptide_mod_pos']=df['Peptide_mod']+"-"+df['PTM positions'].astype(str)
-    for i in df['USI'].groupby(df['Peptide_mod_pos']).apply(';'.join):
-        USI_list.append(i)
-    for i in df.groupby(['Peptide_mod_pos'])['0.05FLR_threshold'].sum():
-        PSM_threshold.append(i)
-    for i in df.groupby(['Peptide_mod_pos'])['0.01<P<=0.05'].sum():
-        sig1.append(i)
-    for i in df.groupby(['Peptide_mod_pos'])['0.05<P<=0.19'].sum():
-        sig2.append(i)
-    for i in df.groupby(['Peptide_mod_pos'])['0.19<P<=0.81'].sum():
-        sig3.append(i)
-    for i in df.groupby(['Peptide_mod_pos'])['0.81<P<=0.95'].sum():
-        sig4.append(i)
-    for i in df.groupby(['Peptide_mod_pos'])['0.95<P<0.99'].sum():
-        sig5.append(i)
-    for i in df.groupby(['Peptide_mod_pos'])['P>=0.99'].sum():
-        sig6.append(i)
+    # for i in df['USI'].groupby(df['Peptide_mod_pos']).apply(';'.join):
+    #     USI_list.append(i)
+    # for i in df.groupby(['Peptide_mod_pos'])['0.05FLR_threshold'].sum():
+    #     PSM_threshold.append(i)
+    # for i in df.groupby(['Peptide_mod_pos'])['0.01<P<=0.05'].sum():
+    #     sig1.append(i)
+    # for i in df.groupby(['Peptide_mod_pos'])['0.05<P<=0.19'].sum():
+    #     sig2.append(i)
+    # for i in df.groupby(['Peptide_mod_pos'])['0.19<P<=0.81'].sum():
+    #     sig3.append(i)
+    # for i in df.groupby(['Peptide_mod_pos'])['0.81<P<=0.95'].sum():
+    #     sig4.append(i)
+    # for i in df.groupby(['Peptide_mod_pos'])['0.95<P<0.99'].sum():
+    #     sig5.append(i)
+    # for i in df.groupby(['Peptide_mod_pos'])['P>=0.99'].sum():
+    #     sig6.append(i)
+    USI_list=dict(df.groupby('Peptide_mod_pos')['USI'].apply(';'.join))
+    PSM_threshold=dict(df.groupby('Peptide_mod_pos')['0.05FLR_threshold'].sum())
+    sig1=dict(df.groupby('Peptide_mod_pos')['0.01<P<=0.05'].sum())
+    sig2=dict(df.groupby('Peptide_mod_pos')['0.05<P<=0.19'].sum())
+    sig3=dict(df.groupby('Peptide_mod_pos')['0.19<P<=0.81'].sum())
+    sig4=dict(df.groupby('Peptide_mod_pos')['0.81<P<=0.95'].sum())
+    sig5=dict(df.groupby('Peptide_mod_pos')['0.95<P<0.99'].sum())
+    sig6=dict(df.groupby('Peptide_mod_pos')['P>=0.99'].sum())
+
+
 
     #original collapse method
     #df = df.drop_duplicates(subset=('Peptide_pos'), keep='last', inplace=False)
     #updated collapse - peptidoform-site based
     df=df.drop_duplicates(subset=(['Peptide_mod_pos']),keep='last',inplace=False)
 
-    df['All_USI'] = USI_list
-    df['0.05FLR_threshold_count'] = PSM_threshold
-    df['0.01<P<=0.05_count']=sig1
-    df['0.05<P<=0.19_count']=sig2
-    df['0.19<P<=0.81_count']=sig3
-    df['0.81<P<=0.95_count']=sig4
-    df['0.95<P<0.99_count']=sig5
-    df['P>=0.99_count']=sig6
+    # df['All_USI'] = USI_list
+    # df['0.05FLR_threshold_count'] = PSM_threshold
+    # df['0.01<P<=0.05_count']=sig1
+    # df['0.05<P<=0.19_count']=sig2
+    # df['0.19<P<=0.81_count']=sig3
+    # df['0.81<P<=0.95_count']=sig4
+    # df['0.95<P<0.99_count']=sig5
+    # df['P>=0.99_count']=sig6
+
+    df['All_USI'] = df['Peptide_mod_pos'].map(USI_list)
+    df['0.05FLR_threshold_count'] = df['Peptide_mod_pos'].map(PSM_threshold)
+    df['0.01<P<=0.05_count']=df['Peptide_mod_pos'].map(sig1)
+    df['0.05<P<=0.19_count']=df['Peptide_mod_pos'].map(sig2)
+    df['0.19<P<=0.81_count']=df['Peptide_mod_pos'].map(sig3)
+    df['0.81<P<=0.95_count']=df['Peptide_mod_pos'].map(sig4)
+    df['0.95<P<0.99_count']=df['Peptide_mod_pos'].map(sig5)
+    df['P>=0.99_count']=df['Peptide_mod_pos'].map(sig6)
+
     df = df.reset_index(drop=True)
     df['Peptide']=df['Peptide'].astype(str)
     df = df.sort_values(by=(['Binomial_final_score','Peptide','Peptide_pos']), ascending=[False,True,True])

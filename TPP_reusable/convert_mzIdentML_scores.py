@@ -136,6 +136,7 @@ def convert(input):
     peptide=[]
     mods=[]
     pos=[]
+    pos_scores=[]
     mass=[]
     res=[]
     protein=[]
@@ -144,6 +145,8 @@ def convert(input):
     psm_prob=[]
     ptm_prob=[]
     rt=[]
+
+    error=""
 
     file = open(temp_file_name, 'r')
     for line in file:
@@ -161,23 +164,20 @@ def convert(input):
                 mod_list=[]
             mod_names=""
             mod_pos=""
+            mod_pos_score=""
             mod_mass=""
             mod_res=""
             for i in range(0,len(mod_list)):
                 mod_pos+=mod_list[i].split(";")[0]+";"
                 mod_res+=mod_list[i].split(";")[1]+";"
-                if mod_list[i].split(";")[2]=="":
-                    mod_mass+="0;"
-                else:
-                    mod_mass+=mod_list[i].split(";")[2]+";"
+                #if mod_list[i].split(";")[2]=="":
+                #    mod_mass+="0;"
+                #else:
+                mod_mass+=mod_list[i].split(";")[2]+";"
                 if mod_list[i].split(";")[3]=="":
                     mod_names+="unknown_mod;"
                 else:
                     mod_names+=mod_list[i].split(";")[3]+";"
-            mods.append(mod_names)
-            pos.append(mod_pos)
-            mass.append(mod_mass)
-            res.append(mod_res)
             protein_temp=protein_dict[peptide_temp].split(";")[0]
             protein_pos.append(protein_dict[peptide_temp].split(";")[1])
             #protein_pre=protein_dict[peptide_temp].split(";")[2]
@@ -191,21 +191,59 @@ def convert(input):
                 if ":" in data_row[i]:
                     PTM_info_temp=[]
                     PTM_info_list=""
+                    ptm_pos_list=[]
+                    ptm_score_list=[]
                     for p in data_row[i][:-1].split(";"):
                         if p.split(":")[2] not in PTM_info_temp:
                             PTM_info_temp.append(p.split(":")[2])
                             PTM_info_list+=p+";"
+                            ptm_pos_list.append(p.split(":")[2])
+                            ptm_score_list.append(p.split(":")[1])
                     ptm_prob.append(PTM_info_list[:-1])
                     rt.append(data_row[i+1])
-                    break
+
+                    if PTM_info_list[:-1]!="":
+                        #sort PTM list by score
+                        #take top n - n from count of Phospho mod_names
+                        n=mod_names.count("Phospho")
+                        ptm_score_list.sort(reverse=True)
+                        ptm_temp=[]
+                        pep=pep_dict[peptide_temp].split(":")[0]
+                        for q in ptm_score_list:
+                            if len(ptm_score_list)!=0:
+                                for PTM in PTM_info_list[:-1].split(";"):
+                                    if q in PTM.split(":")[1]:
+                                        if (PTM.split(":")[2] not in ptm_temp) and (((pep[int(PTM.split(":")[2])-1]=="S") or (pep[int(PTM.split(":")[2])-1]=="T") or (pep[int(PTM.split(":")[2])-1]=="Y") or (pep[int(PTM.split(":")[2])-1]=="A"))) and (len(ptm_temp)<n):
+                                            ptm_temp.append(PTM.split(":")[2])
+
+                        mod_pos_temp=[]
+                        for x,y in zip(mod_names.split(";"),mod_pos.split(";")):
+                            if x=="Phospho":
+                                mod_pos_temp.append(y)
+                        mod_pos_score = ';'.join(ptm_temp)
+                        if set(ptm_temp) != set(mod_pos_temp):
+                            error="Positions based off PTMprophet scores do not match those assigned in MZID file, double check these!"
+                            print(ptm_temp, mod_pos_temp)
+                            print(PTM_info_list[:-1])
+
                 elif data_row[i]=="":
                     rt.append(data_row[i+1])
                     ptm_prob.append("")
-                    break
+            mods.append(mod_names)
+            pos.append(mod_pos)
+            pos_scores.append(mod_pos_score)
+            mass.append(mod_mass)
+            res.append(mod_res)
+    if error!="":
+        print(error)
+        df = pd.DataFrame({"Spectrum":spectrum,"Charge":z,"Calculated mass":calc_mass,"Experimental mass":mass_exp,"Peptide":peptide,"Modifications":mods,"Positions":pos,"Positions_scores":pos_scores,"Modification mass":mass,"Modification residue":res,
+                               "Protein":protein,"Protein position":protein_pos,"e-value":evalue,"PSM probability":psm_prob,"PTM info":ptm_prob,"Retention time":rt})
+        final_file_name_verbose=final_file_name.replace(".csv","_verbose.csv")
+        df.to_csv(final_file_name_verbose, index=False)
 
     try:
         df = pd.DataFrame({"Spectrum":spectrum,"Charge":z,"Calculated mass":calc_mass,"Experimental mass":mass_exp,"Peptide":peptide,"Modifications":mods,"Positions":pos,"Modification mass":mass,"Modification residue":res,
-                       "Protein":protein,"Protein position":protein_pos,"e-value":evalue,"PSM probability":psm_prob,"PTM info":ptm_prob,"Retention time":rt})
+                           "Protein":protein,"Protein position":protein_pos,"e-value":evalue,"PSM probability":psm_prob,"PTM info":ptm_prob,"Retention time":rt})
 
         df.to_csv(final_file_name, index=False)
         file.close()

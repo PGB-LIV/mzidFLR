@@ -109,15 +109,16 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
     df2["USI"]="mzspec:"+PXD+":"+df2['Spectrum'].str.split(".").str[0] +":scan:"+df2['Spectrum'].str.split(".").str[1]+":"+df2['Peptide_mod']+"/"+df2['Charge'].astype(str)
     df2['Source'] = df2['Spectrum'].str.split(".").str[0]
     #replace weird mods which cause issues with USI validation
-    df2=df2.replace("pryo","pyro", regex=True)
+    df2=df2.replace("pryo","pyro", regex=False)
     df2=df2.replace("Q\[Pyro_glu\]","Q[Gln->pyro-Glu]", regex=True)
     df2=df2.replace("E\[Pyro_glu\]","E[Glu->pyro-Glu]", regex=True)
     df2=df2.replace("C\[Pyro_glu\]","C[Ammonia-loss]", regex=True)
-    df2=df2.replace("Carbamidomethylation","Carbamidomethyl", regex=True)
-    df2=df2.replace("346.212775","iTRAQ8plex", regex=True)
-    df2=df2.replace("346.212800","iTRAQ8plex", regex=True)
-    df2=df2.replace("229.162975","TMT6plex", regex=True)
-    df2=df2.replace("229.162932","TMT6plex", regex=True)
+    df2=df2.replace("Carbamidomethylation","Carbamidomethyl", regex=False)
+    df2=df2.replace("346.21","iTRAQ8plex", regex=False)
+    df2=df2.replace("304.2","iTRAQ8plex", regex=False)
+    df2=df2.replace("[229.16]","[TMT6plex]", regex=False)
+    df2=df2.replace("42.01","Acetyl", regex=False)
+
 
     return(df2)
     print("complete --- %s seconds ---" % (time.time() - start_time))
