@@ -11,6 +11,8 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 
 ![Workflow_image](https://user-images.githubusercontent.com/57440286/205335117-e3eea3e7-371c-4736-9d7a-2baf0f10996f.jpg)
 
+Seperate script (Site_based_format_GSB_counts.py) generates site based files and GSB allocation.
+
 # Pipeline description
 
 	Main script "TPP_comparison.py" calls modules:
