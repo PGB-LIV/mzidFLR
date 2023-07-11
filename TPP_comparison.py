@@ -5,6 +5,7 @@ import glob
 
 import TPP_reusable.FDR as FDR
 import TPP_reusable.convert_mzIdentML_sax as convert_mzIdentML_sax
+import TPP_reusable.convert_mzIdentML_scores as convert_mzIdentML_sax_scores
 import TPP_reusable.convert_mzIdentML_sax_MSFrag as convert_mzIdentML_sax_MSFrag
 import TPP_reusable.Post_analysis as Post_analysis
 import TPP_reusable.Binomial_adjustment as Binomial_adjustment
@@ -50,6 +51,8 @@ except:
 	FDR_cutoff=0.01
 	print("PSM FDR cutoff not specified, 0.01 default PSM FDR cutoff used")
 
+if mod_id!="NA" and mod_mass!="NA":
+	print("Modification of interest  "+mod_id+":"+mod_mass)
 sub = "FDR_updated_" + str(FDR_cutoff)
 decoy_list = []
 
@@ -60,7 +63,10 @@ if os.path.isfile(results_file):
 else:
 	try:
 		print("Converting mzid file")
-		convert_mzIdentML_sax.convert(mzid_file)
+		if verbose==True:
+			convert_mzIdentML_sax_scores.convert(mzid_file)
+		else:
+			convert_mzIdentML_sax.convert(mzid_file)
 	except ValueError:
 		raise ValueError("Please provide TPP '.mzid' results file")
 	if os.path.isfile(results_file):
