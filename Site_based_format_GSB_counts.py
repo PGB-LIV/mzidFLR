@@ -80,8 +80,8 @@ for i in folder_list:
 
 
     df['Pep_pos'] = df['Unmodified Sequence'] + "-" + df['Peptide Modification Position'].astype(str)
-    df['Site Passes Threshold 0.05'] = np.where(df['Site Q-Value'] <= 0.05, 1, 0)
-    df['Site Passes Threshold 0.01'] = np.where(df['Site Q-Value'] <= 0.01, 1, 0)
+    df['Site Passes Threshold [0.05]'] = np.where(df['Site Q-Value'] <= 0.05, 1, 0)
+    df['Site Passes Threshold [0.01]'] = np.where(df['Site Q-Value'] <= 0.01, 1, 0)
     df['Decoy Peptide']=np.where(df['Peptidoform'].str.contains("A\[Phospho")==True, 1, 0)
     df['Decoy Modification Site']=df.apply(lambda x: r(x.Pep_pos.split("-")[0], x.Pep_pos.split("-")[1]), axis=1)
     df['PSM Site ID']=df.index
@@ -93,8 +93,8 @@ for i in folder_list:
     df['Peptidoform']=df['Peptidoform'].str.replace(r'\[iTRAQ.*?\]','',regex="True")
 
 
-    df = df[['PSM Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'PTM Probability', 'PSM Probability',
-             'Final Probability','Site Q-Value','Site Passes Threshold 0.05','Site Passes Threshold 0.01', 'Decoy Peptide','Decoy Modification Site',
+    df = df[['PSM Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'PSM Probability','PTM Probability',
+             'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
              'PSM Count Passing Threshold 0.05','Source Dataset Identifier', 'Reanalysis Dataset Identifier', 'PubMedIDs','Sample ID', 'Organism', 'Organism Part',
              'Cell Line','Disease Information', 'Universal Spectrum Identifier']]
     df = df.replace("not applicable","NA")
@@ -126,8 +126,8 @@ for i in folder_list:
     #df['Supporting PSM count']=df['Supporting PSM count'].str.count(";")+1
 
     df['Pep_pos'] = df['Unmodified Sequence'] + "-" + df['Peptide Modification Position'].astype(str)
-    df['Site Passes Threshold 0.05']=np.where(df['Site Q-Value'] <= 0.05, 1, 0)
-    df['Site Passes Threshold 0.01'] = np.where(df['Site Q-Value'] <= 0.01, 1, 0)
+    df['Site Passes Threshold [0.05]']=np.where(df['Site Q-Value'] <= 0.05, 1, 0)
+    df['Site Passes Threshold [0.01]'] = np.where(df['Site Q-Value'] <= 0.01, 1, 0)
     df['Decoy Peptide']=np.where(df['Peptidoform'].str.contains("A\[Phospho")==True, 1, 0)
     df['Decoy Modification Site']=df.apply(lambda x: r(x.Pep_pos.split("-")[0], x.Pep_pos.split("-")[1]), axis=1)
     df['Peptidoform Site ID']=df.index
@@ -184,8 +184,8 @@ for i in folder_list:
     df['Disease Information']=disease
     #####
 
-    df = df[['Peptidoform Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'PTM Probability', 'PSM Probability',
-    'Final Probability','Site Q-Value','Site Passes Threshold 0.05','Site Passes Threshold 0.01', 'Decoy Peptide','Decoy Modification Site',
+    df = df[['Peptidoform Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'PSM Probability', 'PTM Probability',
+    'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
     'PSM Count Passing Threshold 0.05','PSM Count Passing Threshold 0.01', 'Source Dataset Identifier', 'Reanalysis Dataset Identifier','PubMedIDs',
     'Sample ID', 'Organism', 'Organism Part', 'Cell Line', 'Disease Information', 'Universal Spectrum Identifier','opt_PSM count 0.01<P<=0.05','opt_PSM count 0.05<P<=0.19',
     'opt_PSM count 0.19<P<=0.81','opt_PSM count 0.81<P<=0.95','opt_PSM count 0.95<P<0.99','opt_PSM count P>=0.99']]
