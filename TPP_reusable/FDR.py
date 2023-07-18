@@ -124,7 +124,7 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
     print("complete --- %s seconds ---" % (time.time() - start_time))
 
 #calculate FDR
-def calculateFDR(results_file,output,PXD,mod, mod_id, mod_mass, verbose):
+def calculateFDR(results_file,output,PXD, decoy_prefix, mod, mod_id, mod_mass, verbose):
     print("Running: CalculateFDR")
     start_time = time.time()
     #extract results to df
@@ -134,7 +134,7 @@ def calculateFDR(results_file,output,PXD,mod, mod_id, mod_mass, verbose):
     df=df.reset_index(drop=True)
     #set decoy and target
     df['Protein_count'] = df['Protein'].str.count(":")+1
-    df['Decoy_count'] = df['Protein'].str.count("DECOY")
+    df['Decoy_count'] = df['Protein'].str.count(decoy_prefix)
     df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count'],1,0)
     df=df.drop(columns=['Protein_count', 'Decoy_count'])
     #target_count = row_count-decoy_count
@@ -147,7 +147,7 @@ def calculateFDR(results_file,output,PXD,mod, mod_id, mod_mass, verbose):
 
     #warning for no decoys
     if df['FDR'].max==0:
-        sys.exit('No decoys found - check decoy protein prefix contains "DECOY"')
+        sys.exit('No decoys found - check decoy protein prefix, if not given, default is "DECOY"')
 
     #q_val = min FDR at this position or lower
     df['q_value']=df['FDR']

@@ -1,7 +1,6 @@
 import os
 import time
 import sys
-import glob
 
 import TPP_reusable.FDR as FDR
 import TPP_reusable.convert_mzIdentML_sax as convert_mzIdentML_sax
@@ -24,36 +23,47 @@ args = [arg for arg in sys.argv[1:] if not arg.startswith("-")]
 
 mod_id="NA"
 mod_mass="NA"
-#TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]
+#TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]
 if len(args)<3 or len(args)>6:
-    sys.exit("Provide mzid file, PXD identifier and modification of interest. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
+    sys.exit("Provide mzid file, PXD identifier and modification of interest. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
 mzid_file=args[0]
 if mzid_file[-5:]!=".mzid":
     print(mzid_file[-5:])
-    sys.exit("Provide mzid file. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
+    sys.exit("Provide mzid file. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
 PXD = args[1]
 if "PXD" not in PXD:
-    sys.exit("Provide PXD identifier. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
+    sys.exit("Provide PXD identifier. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
 mod_info = args[2]
 if len(mod_info.split(":"))!=3:
-	sys.exit("Provide modification in format modification:target:decoy. E.g. Phospho:STY:A. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
-try:
-	FDR_cutoff = args[3]
-	if ":" in FDR_cutoff:
-		mod_id=FDR_cutoff.split(":")[0]
-		mod_mass=FDR_cutoff.split(":")[1]
+	sys.exit("Provide modification in format modification:target:decoy. E.g. Phospho:STY:A. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
+
+if len(args)>3:
+	for i in range(3,len(args)):
+		temp = args[i]
+		print(temp)
 		try:
-			FDR_cutoff = args[4]
+			float(temp)
+			FDR_cutoff=temp
 		except:
-			FDR_cutoff=0.01
-			print("PSM FDR cutoff not specified, 0.01 default PSM FDR cutoff used")
+			if (":") in temp:
+				mod_id=temp.split(":")[0]
+				mod_mass=temp.split(":")[1]
+			else:
+				decoy_prefix=temp
+try:
+	print("Using decoy prefix: " + decoy_prefix)
 except:
-	FDR_cutoff=0.01
+	print("Decoy prefix not specified, \"DECOY\" default prefix used")
+	decoy_prefix="DECOY"
+try:
+	print("Using FDR cutoff: " + FDR_cutoff)
+except:
 	print("PSM FDR cutoff not specified, 0.01 default PSM FDR cutoff used")
+	FDR_cutoff=0.01
 
 if mod_id!="NA" and mod_mass!="NA":
 	print("Modification of interest  "+mod_id+":"+mod_mass)
-sub = "FDR_updated_" + str(FDR_cutoff)
+sub = "FDR_" + str(FDR_cutoff)
 decoy_list = []
 
 results_file = mzid_file+".csv"
@@ -86,7 +96,7 @@ targets=mod_info.split(":")[1]
 decoy=mod_info.split(":")[2]
 print("Starting FDR calculations")
 print("--- %s seconds ---" % (time.time() - start_time))
-FDR.calculateFDR(results_file, FDR_output, PXD, mod, mod_id, mod_mass, verbose)
+FDR.calculateFDR(results_file, FDR_output, PXD, decoy_prefix, mod, mod_id, mod_mass, verbose)
 FDR.ppm_error(FDR_output)
 print("FDR calculation done")
 print("Starting FLR calculations")
