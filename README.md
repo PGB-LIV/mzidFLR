@@ -7,7 +7,10 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 
 *TPP_reusable* folder contains supported module code for the analysis of Datasets using TPP PTMprophet mzid output files.
 
-      $py TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: modification:mass(2dp)] [optional: FDR_cutoff]
+      $py TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: FDR_cutoff]
+
+To run in verbose mode, include "--verbose" as command line parameter
+
 
 ![Workflow_image](https://user-images.githubusercontent.com/57440286/205335117-e3eea3e7-371c-4736-9d7a-2baf0f10996f.jpg)
 
