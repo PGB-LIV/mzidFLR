@@ -102,8 +102,8 @@ print("FDR calculation done")
 print("Starting FLR calculations")
 print("--- %s seconds ---" % (time.time() - start_time))
 # Post analysis - FLR calulations and plots
-Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod,verbose)
-Post_analysis.model_FLR(sub + "/" + "Site-based.csv",mod,verbose)
+Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod,verbose,decoy_prefix)
+Post_analysis.model_FLR(sub + "/" + "Site-based.csv",mod,verbose, decoy_prefix)
 Post_analysis.calculate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy,targets, verbose)
 Binomial_adjustment.Binomial(sub + "/" + "Site-based_FLR.csv",decoy, targets, verbose)
 

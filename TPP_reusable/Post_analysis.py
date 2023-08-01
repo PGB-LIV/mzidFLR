@@ -42,7 +42,7 @@ def explode(df, lst_cols, fill_value='', preserve_index=False):
     return res
 
 #Explode rows for each PSM postion - for each mod in peptide, a seperate row will show PSM score and corresponding PTM position/score for each site on the peptide
-def site_based(input,FDR_cutoff,mod,verbose):
+def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix):
     print("Running: site_based")
     start_time = time.time()
     if verbose:
@@ -74,7 +74,7 @@ def site_based(input,FDR_cutoff,mod,verbose):
     df = explode(df, ['PTM', 'PTM Score', 'PTM positions', 'Protein position'], fill_value='')
     #df = df[df.PTM == "Phospho"]
     df = df.loc[df['PTM'].str.lower()==mod.lower()]
-    df = df[~df.Protein.str.contains("DECOY")]
+    df = df[~df.Protein.str.contains(decoy_prefix)]
     df = df[~df.Protein.str.contains("CONTAM")]
     df = df.reset_index(drop=True)
     df['Peptide_pos']  = df['Peptide']+"-"+df['PTM positions'].astype(str)
@@ -85,7 +85,7 @@ def site_based(input,FDR_cutoff,mod,verbose):
     print("Complete --- %s seconds ---" % (time.time() - start_time))
 
 #model FLR from combined probability: 1-(PSM prob*PTM prob)/Count
-def model_FLR(file,mod,verbose):
+def model_FLR(file,mod,verbose, decoy_prefix):
     print("Running: Model_FLR")
     start_time = time.time()
     if verbose:
@@ -96,7 +96,7 @@ def model_FLR(file,mod,verbose):
     df = df.loc[df['PTM'].str.lower()==mod.lower()]
     if len(df)==0:
         sys.exit("Modification not found, check spelling or try specifiying modification name and mass to 2dp (eg. Phospho:79.97) \n TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
-    df = df[~df.Protein.str.contains("DECOY",na=False)]
+    df = df[~df.Protein.str.contains(decoy_prefix,na=False)]
     df = df[~df.Protein.str.contains("CONTAM",na=False)]
     df = df.reset_index(drop=True)
     df['Peptide']=df['Peptide'].astype(str)
