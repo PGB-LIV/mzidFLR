@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 import os
+import requests
+import json
 
 #read in csv from FLR pipeline
 #DECOY and CONTAM removed, filtered for contains Phospho, exploded for site based, binomial adjustment and collapsed by peptidoform
@@ -28,7 +30,7 @@ r = lambda x, y : 0 if x[int(y)-1]!="A" else 1
 ### Peptide site format
 for i in folder_list:
     print(i)
-    file=wd+i+"/FDR_updated_0.01/binomial.csv"
+    file=wd+i+"/FDR_0.01/binomial.csv"
     df_temp = pd.read_csv(file)
     search_mod="Phospho"
     #Filter for decoy FLR? - not needed due to "Site Passes Threshold" column
@@ -82,7 +84,7 @@ for i in folder_list:
     df['Pep_pos'] = df['Unmodified Sequence'] + "-" + df['Peptide Modification Position'].astype(str)
     df['Site Passes Threshold [0.05]'] = np.where(df['Site Q-Value'] <= 0.05, 1, 0)
     df['Site Passes Threshold [0.01]'] = np.where(df['Site Q-Value'] <= 0.01, 1, 0)
-    df['Decoy Peptide']=np.where(df['Peptidoform'].str.contains("A\[Phospho")==True, 1, 0)
+    df['Decoy Peptide']=np.where(df['Proteins'].str.contains("DECOY")==True, 1, 0)
     df['Decoy Modification Site']=df.apply(lambda x: r(x.Pep_pos.split("-")[0], x.Pep_pos.split("-")[1]), axis=1)
     df['PSM Site ID']=df.index
     df['PSM Count Passing Threshold 0.05']=1
@@ -101,12 +103,24 @@ for i in folder_list:
 
     df.to_csv(wd+"All_site_formats/"+dataset_ID[0]+"_Site_PSM_centric.tsv", sep="\t", index=False)
 
-    ### Peptidoform site format
+
+    df=df.head(100)
+    #Check USI valid
+    url = 'https://proteomecentral.proteomexchange.org/api/proxi/v0.1/usi_validator'
+    x = requests.post(url, json=df['Universal Spectrum Identifier'].to_list())
+    res=json.loads(x.text)
+
+    for i in range(len(df)):
+        #df.loc[i,'Valid_USI']=res['validation_results'][df.loc[i,'USI']]['is_valid']
+        if res['validation_results'][df.loc[i,'Universal Spectrum Identifier']]['is_valid']==False:
+            print(df.loc[i,'Universal Spectrum Identifier'])
+
+### Peptidoform site format
 
 print("PSM format complete, creating Peptidoform format")
 for i in folder_list:
     print(i)
-    file=wd+i+"/FDR_updated_0.01/binomial_peptidoform_collapsed_FLR.csv"
+    file=wd+i+"/FDR_0.01/binomial_peptidoform_collapsed_FLR.csv"
     df_temp = pd.read_csv(file)
     search_mod="Phospho"
     #Filter for decoy FLR? - not needed due to "Site Passes Threshold" column
@@ -115,7 +129,7 @@ for i in folder_list:
                   '0.95<P<0.99_count', 'P>=0.99_count','All_Source']].copy()
     df = df.rename(columns={'All_Proteins':'Proteins','Peptide_mod':'Peptidoform','Peptide':'Unmodified Sequence','pA_q_value_BA':'Site Q-Value','Score':'PSM Probability','PTM Score':'PTM Probability',
                             'PTM positions':'Peptide Modification Position','Binomial_final_score':'Final Probability','All_PTMs':'Modifications','All_PTM_scores':'Modification probabilities',
-                            'All_PTM_positions':'Modification positions','0.05FLR_threshold_count':'PSM Count Passing Threshold 0.05','0.01FLR_threshold_count':'PSM Count Passing Threshold 0.01',
+                            'All_PTM_positions':'Modification positions','0.05FLR_threshold_count':'PSM Count Passing Threshold [0.05]','0.01FLR_threshold_count':'PSM Count Passing Threshold [0.01]',
                             '0.01<P<=0.05_count':'opt_PSM count 0.01<P<=0.05','0.05<P<=0.19_count':'opt_PSM count 0.05<P<=0.19','0.19<P<=0.81_count':'opt_PSM count 0.19<P<=0.81',
                             '0.81<P<=0.95_count':'opt_PSM count 0.81<P<=0.95', '0.95<P<0.99_count':'opt_PSM count 0.95<P<0.99', 'P>=0.99_count':'opt_PSM count P>=0.99',
                             'USI':'Universal Spectrum Identifier'}) #'All_USI':'Supporting PSM count'
@@ -128,7 +142,7 @@ for i in folder_list:
     df['Pep_pos'] = df['Unmodified Sequence'] + "-" + df['Peptide Modification Position'].astype(str)
     df['Site Passes Threshold [0.05]']=np.where(df['Site Q-Value'] <= 0.05, 1, 0)
     df['Site Passes Threshold [0.01]'] = np.where(df['Site Q-Value'] <= 0.01, 1, 0)
-    df['Decoy Peptide']=np.where(df['Peptidoform'].str.contains("A\[Phospho")==True, 1, 0)
+    df['Decoy Peptide']=np.where(df['Proteins'].str.contains("DECOY")==True, 1, 0)
     df['Decoy Modification Site']=df.apply(lambda x: r(x.Pep_pos.split("-")[0], x.Pep_pos.split("-")[1]), axis=1)
     df['Peptidoform Site ID']=df.index
 
@@ -186,7 +200,7 @@ for i in folder_list:
 
     df = df[['Peptidoform Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'PSM Probability', 'PTM Probability',
     'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
-    'PSM Count Passing Threshold 0.05','PSM Count Passing Threshold 0.01', 'Source Dataset Identifier', 'Reanalysis Dataset Identifier','PubMedIDs',
+    'PSM Count Passing Threshold [0.05]','PSM Count Passing Threshold [0.01]', 'Source Dataset Identifier', 'Reanalysis Dataset Identifier','PubMedIDs',
     'Sample ID', 'Organism', 'Organism Part', 'Cell Line', 'Disease Information', 'Universal Spectrum Identifier','opt_PSM count 0.01<P<=0.05','opt_PSM count 0.05<P<=0.19',
     'opt_PSM count 0.19<P<=0.81','opt_PSM count 0.81<P<=0.95','opt_PSM count 0.95<P<0.99','opt_PSM count P>=0.99']]
     df = df.replace("not applicable","NA")
@@ -197,7 +211,7 @@ print("Peptidoform formats done, creating GSB counts")
 flr_filter=0.05
 ### GSB counts
 for loc in folder_list:
-    loc_full=wd+"/"+loc+"/FDR_updated_0.01/binomial_peptidoform_collapsed_FLR.csv"
+    loc_full=wd+"/"+loc+"/FDR_0.01/binomial_peptidoform_collapsed_FLR.csv"
     df=pd.read_csv(loc_full)
     df=df.loc[df['pA_q_value_BA']<=flr_filter]
     df=df.sort_values(['Protein-pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
