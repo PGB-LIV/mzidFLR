@@ -34,9 +34,9 @@ for i in folder_list:
     df_temp = pd.read_csv(file)
     search_mod="Phospho"
     #Filter for decoy FLR? - not needed due to "Site Passes Threshold" column
-    df = df_temp[['All_Proteins','Peptide','USI','pA_q_value','PTM Score','All_PTM_positions','Score','PTM positions','PTM_info','Binomial_final_score','Peptide_mod','All_PTMs','All_PTM_positions',
+    df = df_temp[['All_Proteins','All_PTM_protein_positions','Peptide','USI','pA_q_value','PTM Score','Score','PTM positions','PTM_info','Binomial_final_score','Peptide_mod','All_PTMs','All_PTM_positions',
                   'All_PTM_scores','All_USI','Protein position','Source']].copy()
-    df = df.rename(columns={'All_Proteins':'Proteins','pA_q_value':'Site Q-Value','Score':'PSM Probability','PTM Score':'PTM Probability',
+    df = df.rename(columns={'All_Proteins':'Proteins','All_PTM_protein_positions':'Protein Modification Positions','pA_q_value':'Site Q-Value','Score':'PSM Probability','PTM Score':'PTM Probability',
                             'PTM positions':'Peptide Modification Position','Binomial_final_score':'Final Probability','All_PTMs':'Modifications','All_PTM_scores':'Modification probabilities',
                             'All_PTM_positions':'Modification positions','Peptide_mod':'Peptidoform','Peptide':'Unmodified Sequence','USI':'Universal Spectrum Identifier'}) #'All_USI':'Supporting PSM count',
     df = df.reset_index(drop=True)
@@ -60,6 +60,13 @@ for i in folder_list:
     cell_line=[]
     disease=[]
     for x in range(len(df)):
+        protein_PTM=""
+        for z,y in zip(df.loc[x,'Proteins'].split(";"),df.loc[x,'Protein Modification Positions'].split(":")):
+            for a,b in zip(df.loc[x,'Modification positions'].split(";"),y.split(";")):
+                if int(a)==int(df.loc[x,'Peptide Modification Position']):
+                    protein_PTM+=b+";"
+        df.loc[x,'Protein Modification Positions']=protein_PTM[:-1]
+
         source=df.loc[x,"Source"]
         source=source.replace("_raw","")
         PXD=dict["comment[proteomexchange accession number]"][source]
@@ -95,7 +102,7 @@ for i in folder_list:
     df['Peptidoform']=df['Peptidoform'].str.replace(r'\[iTRAQ.*?\]','',regex="True")
 
 
-    df = df[['PSM Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'PSM Probability','PTM Probability',
+    df = df[['PSM Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'Protein Modification Positions','PSM Probability','PTM Probability',
              'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
              'PSM Count Passing Threshold 0.05','Source Dataset Identifier', 'Reanalysis Dataset Identifier', 'PubMedIDs','Sample ID', 'Organism', 'Organism Part',
              'Cell Line','Disease Information', 'Universal Spectrum Identifier']]
@@ -122,12 +129,13 @@ for i in folder_list:
     print(i)
     file=wd+i+"/FDR_0.01/binomial_peptidoform_collapsed_FLR.csv"
     df_temp = pd.read_csv(file)
+
     search_mod="Phospho"
     #Filter for decoy FLR? - not needed due to "Site Passes Threshold" column
-    df = df_temp[['All_Proteins','Peptide','USI','pA_q_value_BA','PTM Score','All_PTM_positions','Score','PTM positions','PTM_info','Binomial_final_score','Peptide_mod','All_PTMs','All_PTM_positions',
+    df = df_temp[['All_Proteins','All_PTM_protein_positions','Peptide','USI','pA_q_value_BA','PTM Score','Score','PTM positions','PTM_info','Binomial_final_score','Peptide_mod','All_PTMs','All_PTM_positions',
                   'All_PTM_scores','All_USI','Protein position','0.05FLR_threshold_count','0.01FLR_threshold_count','0.01<P<=0.05_count','0.05<P<=0.19_count','0.19<P<=0.81_count', '0.81<P<=0.95_count',
                   '0.95<P<0.99_count', 'P>=0.99_count','All_Source']].copy()
-    df = df.rename(columns={'All_Proteins':'Proteins','Peptide_mod':'Peptidoform','Peptide':'Unmodified Sequence','pA_q_value_BA':'Site Q-Value','Score':'PSM Probability','PTM Score':'PTM Probability',
+    df = df.rename(columns={'All_Proteins':'Proteins','All_PTM_protein_positions':'Protein Modification Positions','Peptide_mod':'Peptidoform','Peptide':'Unmodified Sequence','pA_q_value_BA':'Site Q-Value','Score':'PSM Probability','PTM Score':'PTM Probability',
                             'PTM positions':'Peptide Modification Position','Binomial_final_score':'Final Probability','All_PTMs':'Modifications','All_PTM_scores':'Modification probabilities',
                             'All_PTM_positions':'Modification positions','0.05FLR_threshold_count':'PSM Count Passing Threshold [0.05]','0.01FLR_threshold_count':'PSM Count Passing Threshold [0.01]',
                             '0.01<P<=0.05_count':'opt_PSM count 0.01<P<=0.05','0.05<P<=0.19_count':'opt_PSM count 0.05<P<=0.19','0.19<P<=0.81_count':'opt_PSM count 0.19<P<=0.81',
@@ -161,7 +169,16 @@ for i in folder_list:
     organism_part=[]
     cell_line=[]
     disease=[]
+
+
     for x in range(len(df)):
+        protein_PTM=""
+        for z,y in zip(df.loc[x,'Proteins'].split(";"),df.loc[x,'Protein Modification Positions'].split(":")):
+            for a,b in zip(df.loc[x,'Modification positions'].split(";"),y.split(";")):
+                if a==df.loc[x,'Peptide Modification Position']:
+                    protein_PTM+=b+";"
+        df.loc[x,'Protein Modification Positions']=protein_PTM[:-1]
+
         source_all=df.loc[x,"All_Source"]
         for source in source_all.split(";"):
             source=source.replace("_raw","")
@@ -198,7 +215,7 @@ for i in folder_list:
     df['Disease Information']=disease
     #####
 
-    df = df[['Peptidoform Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'PSM Probability', 'PTM Probability',
+    df = df[['Peptidoform Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'Protein Modification Positions', 'PSM Probability', 'PTM Probability',
     'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
     'PSM Count Passing Threshold [0.05]','PSM Count Passing Threshold [0.01]', 'Source Dataset Identifier', 'Reanalysis Dataset Identifier','PubMedIDs',
     'Sample ID', 'Organism', 'Organism Part', 'Cell Line', 'Disease Information', 'Universal Spectrum Identifier','opt_PSM count 0.01<P<=0.05','opt_PSM count 0.05<P<=0.19',
