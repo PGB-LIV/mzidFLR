@@ -26,101 +26,101 @@ if not os.path.exists(wd+"/All_site_formats"):
     os.mkdir(sub)
 
 r = lambda x, y : 0 if x[int(y)-1]!="A" else 1
-
-### Peptide site format
-for i in folder_list:
-    print(i)
-    file=wd+i+"/FDR_0.01/binomial.csv"
-    df_temp = pd.read_csv(file)
-    search_mod="Phospho"
-    #Filter for decoy FLR? - not needed due to "Site Passes Threshold" column
-    df = df_temp[['All_Proteins','All_PTM_protein_positions','Peptide','USI','pA_q_value','PTM Score','Score','PTM positions','PTM_info','Binomial_final_score','Peptide_mod','All_PTMs','All_PTM_positions',
-                  'All_PTM_scores','All_USI','Protein position','Source']].copy()
-    df = df.rename(columns={'All_Proteins':'Proteins','All_PTM_protein_positions':'Protein Modification Positions','pA_q_value':'Site Q-Value','Score':'PSM Probability','PTM Score':'PTM Probability',
-                            'PTM positions':'Peptide Modification Position','Binomial_final_score':'Final Probability','All_PTMs':'Modifications','All_PTM_scores':'Modification probabilities',
-                            'All_PTM_positions':'Modification positions','Peptide_mod':'Peptidoform','Peptide':'Unmodified Sequence','USI':'Universal Spectrum Identifier'}) #'All_USI':'Supporting PSM count',
-    df = df.reset_index(drop=True)
-    df['Proteins'] = df['Proteins'].str.replace(":",";")
-    df['Modification']=search_mod
-
-    ######
-    meta_file=wd+"PRIDE/SDRFs/"+i+".sdrf.tsv"
-    meta=pd.read_csv(meta_file,sep="\t")
-    meta['comment[data file]']=meta['comment[data file]'].str.split(".").str[0]
-    meta['comment[data file]']=meta['comment[data file]'].str.replace(" ","_")
-    meta.set_index('comment[data file]', inplace=True)
-    dict=meta.to_dict()
-
-
-    PMID=[]
-    Sample=[]
-    dataset_ID=[]
-    organism=[]
-    organism_part=[]
-    cell_line=[]
-    disease=[]
-    for x in range(len(df)):
-        protein_PTM=""
-        for z,y in zip(df.loc[x,'Proteins'].split(";"),df.loc[x,'Protein Modification Positions'].split(":")):
-            for a,b in zip(df.loc[x,'Modification positions'].split(";"),y.split(";")):
-                if int(a)==int(df.loc[x,'Peptide Modification Position']):
-                    protein_PTM+=b+";"
-        df.loc[x,'Protein Modification Positions']=protein_PTM[:-1]
-
-        source=df.loc[x,"Source"]
-        source=source.replace("_raw","")
-        PXD=dict["comment[proteomexchange accession number]"][source]
-        PMID.append(dict_all[PXD][0])
-        Sample.append(dict["source name"][source])
-        dataset_ID.append(PXD)
-        organism.append(dict["characteristics[organism]"][source])
-        organism_part.append(dict["characteristics[organism part]"][source])
-        cell_line.append(dict["characteristics[cell type]"][source])
-        disease.append(dict["characteristics[disease]"][source])
-    df['PubMedIDs']=PMID
-    df['Sample ID']=Sample
-    df['Source Dataset Identifier']=dataset_ID
-    df['Reanalysis Dataset Identifier']="NA"
-    df['Organism']=organism
-    df['Organism Part']=organism_part
-    df['Cell Line']=cell_line
-    df['Disease Information']=disease
-    #####
-
-
-    df['Pep_pos'] = df['Unmodified Sequence'] + "-" + df['Peptide Modification Position'].astype(str)
-    df['Site Passes Threshold [0.05]'] = np.where(df['Site Q-Value'] <= 0.05, 1, 0)
-    df['Site Passes Threshold [0.01]'] = np.where(df['Site Q-Value'] <= 0.01, 1, 0)
-    df['Decoy Peptide']=np.where(df['Proteins'].str.contains("DECOY")==True, 1, 0)
-    df['Decoy Modification Site']=df.apply(lambda x: r(x.Pep_pos.split("-")[0], x.Pep_pos.split("-")[1]), axis=1)
-    df['PSM Site ID']=df.index
-    df['PSM Count Passing Threshold 0.05']=1
-
-
-    #peptidoform without reagent labels?
-    df['Peptidoform']=df['Peptidoform'].str.replace(r'\[TMT(.*?)\]','',regex="True")
-    df['Peptidoform']=df['Peptidoform'].str.replace(r'\[iTRAQ.*?\]','',regex="True")
-
-
-    df = df[['PSM Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'Protein Modification Positions','PSM Probability','PTM Probability',
-             'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
-             'PSM Count Passing Threshold 0.05','Source Dataset Identifier', 'Reanalysis Dataset Identifier', 'PubMedIDs','Sample ID', 'Organism', 'Organism Part',
-             'Cell Line','Disease Information', 'Universal Spectrum Identifier']]
-    df = df.replace("not applicable","NA")
-
-    df.to_csv(wd+"All_site_formats/"+dataset_ID[0]+"_Site_PSM_centric.tsv", sep="\t", index=False)
-
-
-    df=df.head(100)
-    #Check USI valid
-    url = 'https://proteomecentral.proteomexchange.org/api/proxi/v0.1/usi_validator'
-    x = requests.post(url, json=df['Universal Spectrum Identifier'].to_list())
-    res=json.loads(x.text)
-
-    for i in range(len(df)):
-        #df.loc[i,'Valid_USI']=res['validation_results'][df.loc[i,'USI']]['is_valid']
-        if res['validation_results'][df.loc[i,'Universal Spectrum Identifier']]['is_valid']==False:
-            print(df.loc[i,'Universal Spectrum Identifier'])
+#
+# ### Peptide site format
+# for i in folder_list:
+#     print(i)
+#     file=wd+i+"/FDR_0.01/binomial.csv"
+#     df_temp = pd.read_csv(file)
+#     search_mod="Phospho"
+#     #Filter for decoy FLR? - not needed due to "Site Passes Threshold" column
+#     df = df_temp[['All_Proteins','All_PTM_protein_positions','Peptide','USI','pA_q_value','PTM Score','Score','PTM positions','PTM_info','Binomial_final_score','Peptide_mod','All_PTMs','All_PTM_positions',
+#                   'All_PTM_scores','All_USI','Protein position','Source']].copy()
+#     df = df.rename(columns={'All_Proteins':'Proteins','All_PTM_protein_positions':'Protein Modification Positions','pA_q_value':'Site Q-Value','Score':'PSM Probability','PTM Score':'PTM Probability',
+#                             'PTM positions':'Peptide Modification Position','Binomial_final_score':'Final Probability','All_PTMs':'Modifications','All_PTM_scores':'Modification probabilities',
+#                             'All_PTM_positions':'Modification positions','Peptide_mod':'Peptidoform','Peptide':'Unmodified Sequence','USI':'Universal Spectrum Identifier'}) #'All_USI':'Supporting PSM count',
+#     df = df.reset_index(drop=True)
+#     df['Proteins'] = df['Proteins'].str.replace(":",";")
+#     df['Modification']=search_mod
+#
+#     ######
+#     meta_file=wd+"PRIDE/SDRFs/"+i+".sdrf.tsv"
+#     meta=pd.read_csv(meta_file,sep="\t")
+#     meta['comment[data file]']=meta['comment[data file]'].str.split(".").str[0]
+#     meta['comment[data file]']=meta['comment[data file]'].str.replace(" ","_")
+#     meta.set_index('comment[data file]', inplace=True)
+#     dict=meta.to_dict()
+#
+#
+#     PMID=[]
+#     Sample=[]
+#     dataset_ID=[]
+#     organism=[]
+#     organism_part=[]
+#     cell_line=[]
+#     disease=[]
+#     for x in range(len(df)):
+#         protein_PTM=""
+#         for z,y in zip(df.loc[x,'Proteins'].split(";"),df.loc[x,'Protein Modification Positions'].split(":")):
+#             for a,b in zip(df.loc[x,'Modification positions'].split(";"),y.split(";")):
+#                 if int(a)==int(df.loc[x,'Peptide Modification Position']):
+#                     protein_PTM+=b+";"
+#         df.loc[x,'Protein Modification Positions']=protein_PTM[:-1]
+#
+#         source=df.loc[x,"Source"]
+#         source=source.replace("_raw","")
+#         PXD=dict["comment[proteomexchange accession number]"][source]
+#         PMID.append(dict_all[PXD][0])
+#         Sample.append(dict["source name"][source])
+#         dataset_ID.append(PXD)
+#         organism.append(dict["characteristics[organism]"][source])
+#         organism_part.append(dict["characteristics[organism part]"][source])
+#         cell_line.append(dict["characteristics[cell type]"][source])
+#         disease.append(dict["characteristics[disease]"][source])
+#     df['PubMedIDs']=PMID
+#     df['Sample ID']=Sample
+#     df['Source Dataset Identifier']=dataset_ID
+#     df['Reanalysis Dataset Identifier']="NA"
+#     df['Organism']=organism
+#     df['Organism Part']=organism_part
+#     df['Cell Line']=cell_line
+#     df['Disease Information']=disease
+#     #####
+#
+#
+#     df['Pep_pos'] = df['Unmodified Sequence'] + "-" + df['Peptide Modification Position'].astype(str)
+#     df['Site Passes Threshold [0.05]'] = np.where(df['Site Q-Value'] <= 0.05, 1, 0)
+#     df['Site Passes Threshold [0.01]'] = np.where(df['Site Q-Value'] <= 0.01, 1, 0)
+#     df['Decoy Peptide']=np.where(df['Proteins'].str.contains("DECOY")==True, 1, 0)
+#     df['Decoy Modification Site']=df.apply(lambda x: r(x.Pep_pos.split("-")[0], x.Pep_pos.split("-")[1]), axis=1)
+#     df['PSM Site ID']=df.index
+#     df['PSM Count Passing Threshold 0.05']=1
+#
+#
+#     #peptidoform without reagent labels?
+#     df['Peptidoform']=df['Peptidoform'].str.replace(r'\[TMT(.*?)\]','',regex="True")
+#     df['Peptidoform']=df['Peptidoform'].str.replace(r'\[iTRAQ.*?\]','',regex="True")
+#
+#
+#     df = df[['PSM Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position', 'Protein Modification Positions','PSM Probability','PTM Probability',
+#              'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
+#              'PSM Count Passing Threshold 0.05','Source Dataset Identifier', 'Reanalysis Dataset Identifier', 'PubMedIDs','Sample ID', 'Organism', 'Organism Part',
+#              'Cell Line','Disease Information', 'Universal Spectrum Identifier']]
+#     df = df.replace("not applicable","NA")
+#
+#     df.to_csv(wd+"All_site_formats/"+dataset_ID[0]+"_Site_PSM_centric.tsv", sep="\t", index=False)
+#
+#
+#     df=df.head(100)
+#     #Check USI valid
+#     url = 'https://proteomecentral.proteomexchange.org/api/proxi/v0.1/usi_validator'
+#     x = requests.post(url, json=df['Universal Spectrum Identifier'].to_list())
+#     res=json.loads(x.text)
+#
+#     for i in range(len(df)):
+#         #df.loc[i,'Valid_USI']=res['validation_results'][df.loc[i,'USI']]['is_valid']
+#         if res['validation_results'][df.loc[i,'Universal Spectrum Identifier']]['is_valid']==False:
+#             print(df.loc[i,'Universal Spectrum Identifier'])
 
 ### Peptidoform site format
 
@@ -175,7 +175,7 @@ for i in folder_list:
         protein_PTM=""
         for z,y in zip(df.loc[x,'Proteins'].split(";"),df.loc[x,'Protein Modification Positions'].split(":")):
             for a,b in zip(df.loc[x,'Modification positions'].split(";"),y.split(";")):
-                if a==df.loc[x,'Peptide Modification Position']:
+                if int(a)==df.loc[x,'Peptide Modification Position']:
                     protein_PTM+=b+";"
         df.loc[x,'Protein Modification Positions']=protein_PTM[:-1]
 
