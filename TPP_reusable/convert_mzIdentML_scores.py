@@ -119,6 +119,16 @@ def convert(input):
         reader = csv.reader(infile)
         pep_dict = {rows[0]:rows[1] for rows in reader}
 
+    colnames = ["DBSeq","Pep","Start","Pre","Post"]
+    protein_dict_temp=pd.read_csv(protein_dict_name,names=colnames,dtype = {'Start': str})
+    protein_list = dict(protein_dict_temp.groupby('Pep')['DBSeq'].apply(':'.join))
+    protein_start_list = dict(protein_dict_temp.groupby('Pep')['Start'].apply(':'.join))
+    protein_dict_temp = protein_dict_temp.drop_duplicates(subset=(['Pep']), keep='last', inplace=False)
+    protein_dict_temp['DBSeq'] = protein_dict_temp['Pep'].map(protein_list)
+    protein_dict_temp['Start'] = protein_dict_temp['Pep'].map(protein_start_list)
+    protein_dict_temp.to_csv(protein_dict_name, index=False)
+
+
     with open(protein_dict_name, mode='r') as infile:
         next(infile)
         reader = csv.reader(infile)
@@ -172,17 +182,35 @@ def convert(input):
                 mod_res+=mod_list[i].split(";")[1]+";"
                 #if mod_list[i].split(";")[2]=="":
                 #    mod_mass+="0;"
+
                 #else:
                 mod_mass+=mod_list[i].split(";")[2]+";"
                 if mod_list[i].split(";")[3]=="":
                     mod_names+="unknown_mod;"
                 else:
                     mod_names+=mod_list[i].split(";")[3]+";"
+
+
+
+
+
             protein_temp=protein_dict[peptide_temp].split(";")[0]
-            protein_pos.append(protein_dict[peptide_temp].split(";")[1])
+            protein_pos_temp=protein_dict[peptide_temp].split(";")[1]
+            #protein_pos.append(protein_dict[peptide_temp].split(";")[1])
             #protein_pre=protein_dict[peptide_temp].split(";")[2]
             #protein_post=protein_dict[peptide_temp].split(";")[3]
-            protein.append(proteinID_dict[protein_temp])
+            protein_pos_all=""
+            protein_all=""
+            for x,y in zip(protein_temp.split(":"),protein_pos_temp.split(":")):
+                protein_pos_all+=y+":"
+                protein_all+=proteinID_dict[x]+":"
+            protein_pos.append(protein_pos_all[:-1])
+            protein.append(protein_all[:-1])
+
+
+
+
+            #protein.append(proteinID_dict[protein_temp])
             evalue.append(data_row[5])
             psm_prob.append(data_row[6])
             #start at 7, increase check for blank or ":" (ptm prophet), if blank next cell is RT, if ptm prophet result, next cell is RT
@@ -201,6 +229,7 @@ def convert(input):
                             ptm_score_list.append(p.split(":")[1])
                     ptm_prob.append(PTM_info_list[:-1])
                     rt.append(data_row[i+1])
+
 
                     if PTM_info_list[:-1]!="":
                         #sort PTM list by score
@@ -229,6 +258,7 @@ def convert(input):
                 elif data_row[i]=="":
                     rt.append(data_row[i+1])
                     ptm_prob.append("")
+
             mods.append(mod_names)
             pos.append(mod_pos)
             pos_scores.append(mod_pos_score)
@@ -237,7 +267,7 @@ def convert(input):
     if error!="":
         print(error)
         df = pd.DataFrame({"Spectrum":spectrum,"Charge":z,"Calculated mass":calc_mass,"Experimental mass":mass_exp,"Peptide":peptide,"Modifications":mods,"Positions":pos,"Positions_scores":pos_scores,"Modification mass":mass,"Modification residue":res,
-                               "Protein":protein,"Protein position":protein_pos,"e-value":evalue,"PSM probability":psm_prob,"PTM info":ptm_prob,"Retention time":rt})
+                           "Protein":protein,"Protein position":protein_pos,"e-value":evalue,"PSM probability":psm_prob,"PTM info":ptm_prob,"Retention time":rt})
         final_file_name_verbose=final_file_name.replace(".csv","_verbose.csv")
         df.to_csv(final_file_name_verbose, index=False)
 

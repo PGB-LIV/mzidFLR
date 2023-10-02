@@ -121,6 +121,15 @@ def convert(input):
         reader = csv.reader(infile)
         pep_dict = {rows[0]:rows[1] for rows in reader}
 
+    colnames = ["DBSeq","Pep","Start","Pre","Post"]
+    protein_dict_temp=pd.read_csv(protein_dict_name,names=colnames,dtype = {'Start': str})
+    protein_list = dict(protein_dict_temp.groupby('Pep')['DBSeq'].apply(':'.join))
+    protein_start_list = dict(protein_dict_temp.groupby('Pep')['Start'].apply(':'.join))
+    protein_dict_temp = protein_dict_temp.drop_duplicates(subset=(['Pep']), keep='last', inplace=False)
+    protein_dict_temp['DBSeq'] = protein_dict_temp['Pep'].map(protein_list)
+    protein_dict_temp['Start'] = protein_dict_temp['Pep'].map(protein_start_list)
+    protein_dict_temp.to_csv(protein_dict_name, index=False)
+
     with open(protein_dict_name, mode='r') as infile:
         next(infile)
         reader = csv.reader(infile)
@@ -177,8 +186,19 @@ def convert(input):
             pos.append(mod_pos)
             mass.append(mod_mass)
             res.append(mod_res)
+            #protein_temp=protein_dict[peptide_temp].split(";")[0]
+            #protein_pos.append(protein_dict[peptide_temp].split(";")[1])
+
             protein_temp=protein_dict[peptide_temp].split(";")[0]
-            protein_pos.append(protein_dict[peptide_temp].split(";")[1])
+            protein_pos_temp=protein_dict[peptide_temp].split(";")[1]
+            protein_pos_all=""
+            protein_all=""
+            for x,y in zip(protein_temp.split(":"),protein_pos_temp.split(":")):
+                protein_pos_all+=y+":"
+                protein_all+=proteinID_dict[x]+":"
+            protein_pos.append(protein_pos_all[:-1])
+            protein.append(protein_all[:-1])
+
             #protein_pre=protein_dict[peptide_temp].split(";")[2]
             #protein_post=protein_dict[peptide_temp].split(";")[3]
             protein.append(proteinID_dict[protein_temp])
