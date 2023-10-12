@@ -1,4 +1,4 @@
-# mzid_pipeline
+# mzidFLR pipeline
  
 Scripts for estimating false localisation rates (FLR) using two methods, model FLR and Decoy amino acid FLR, starting from mzid files (pep.xml pipeline [here](https://github.com/PGB-LIV/PhosphoFLR)). 
 
