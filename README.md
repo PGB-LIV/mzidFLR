@@ -14,7 +14,9 @@ To run in verbose mode, include "--verbose" as command line parameter
 
 ![Workflow_image](https://user-images.githubusercontent.com/57440286/205335117-e3eea3e7-371c-4736-9d7a-2baf0f10996f.jpg)
 
-Seperate script (Site_based_format_GSB_counts.py) generates site based files and GSB allocation.
+Seperate script (Site_based.py) generates site based files:
+
+      $py Site_based.py [optional: PMID] [optional: SDRF file]
 
 # Pipeline description
 
