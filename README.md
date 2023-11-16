@@ -18,6 +18,9 @@ Seperate script (Site_based.py) generates site based files:
 
       $py Site_based.py [optional: PMID] [optional: SDRF file]
 
+Generates "Site-PSM-centric.tsv" and "Site-Peptidofom-centric.tsv" 
+
+
 # Pipeline description
 
 	Main script "TPP_comparison.py" calls modules:
