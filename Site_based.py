@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import sys
 # import requests
 # import json
 
@@ -9,28 +10,31 @@ import numpy as np
 ## Usage - Site_based.py [optional: PMID] [optional: SDRF file]
 ## If no PMID or USI given, "NA" used
 try:
-    PMID = args[1]
-    if ".sdrf.tsv" in SDRF:
-        SDRF = args[1]
+    PMID = sys.argv[1]
+    if ".sdrf.tsv" in PMID:
+        SDRF = sys.argv[1]
         try:
-            PMID = args[2]
+            PMID = sys.argv[2]
         except:
             PMID = "NA"
 except:
     PMID = "NA"
 
 try:
-    SDRF = args[2]
+    SDRF = sys.argv[2]
     if ".sdrf.tsv" in SDRF:
-        SDRF = args[2]
+        SDRF = sys.argv[2]
     else:
         SDRF = "NA"
         try:
-            PMID = args[2]
+            PMID = sys.argv[2]
         except:
             PMID = "NA"
 except:
     SDRF = "NA"
+
+print("USING PMID: ", PMID)
+print("USING SDRF FILE: ", SDRF)
 
 r = lambda x, y : 0 if x[int(y)-1]!="A" else 1
 
@@ -174,7 +178,7 @@ df['Decoy Peptide']=np.where(df['Proteins'].str.contains("DECOY")==True, 1, 0)
 df['Decoy Modification Site']=df.apply(lambda x: r(x.Pep_pos.split("-")[0], x.Pep_pos.split("-")[1]), axis=1)
 df['Peptidoform Site ID']=df.index
 
-PMID=[]
+PMID_list=[]
 Sample=[]
 dataset_ID=[]
 organism=[]
@@ -209,11 +213,8 @@ for x in range(len(df)):
             PXD=dict["comment[proteomexchange accession number]"][source]
         except:
             PXD=df.loc[x,'Universal Spectrum Identifier'].split(":")[1]
-        try:
-            PMID_temp.append(dict_all[PXD][0])
-        except:
-            PMID_temp.append("NA")
         dataset_ID_temp.append(PXD)
+        PMID_temp.append(PMID)
         try:
             organism_temp.append(dict["characteristics[organism]"][source])
         except:
@@ -230,7 +231,7 @@ for x in range(len(df)):
             disease_temp.append(dict["characteristics[disease]"][source])
         except:
             disease_temp.append("NA")
-    PMID.append(";".join(map(str,list(set(PMID_temp)))))
+    PMID_list.append(";".join(map(str,list(set(PMID_temp)))))
     Sample.append(";".join(map(str,list(set(Sample_temp)))))
     dataset_ID.append(";".join(map(str,list(set(dataset_ID_temp)))))
     organism.append(";".join(map(str,list(set(organism_temp)))))
