@@ -14,7 +14,9 @@ To run in verbose mode, include "--verbose" as command line parameter
 
 ![Workflow_image](https://user-images.githubusercontent.com/57440286/205335117-e3eea3e7-371c-4736-9d7a-2baf0f10996f.jpg)
 
-Seperate script (FLR_counts_pipeline.py) generates FLR counts for all searches:
+
+## FLR_counts_pipeline.py
+Generates FLR counts for all searches:
 
 	$py FLR_counts_pipeline.p [file_list.txt]
  
@@ -23,8 +25,9 @@ Where file_list.txt contains the locations of analysis files (ie. PXD/Experiment
 Generates "FLRcounts_noA.csv" and "FLRcounts_no_choice_noA.csv" where no-choice peptides are ignored from FLR counts.
 
 
+## Site_based_format_GSB_counts_pipeline.py
 
-Seperate script (Site_based_format_GSB_counts_pipeline.py) generates site based files and Gold-Silver-Bronze classification:
+Generates site based files and Gold-Silver-Bronze classification:
 
 	$py Site_based_format_GSB_counts_pipeline.py [file_list.txt] [Gold count threshold] [Silver count threshold] [optional: meta.csv] [optional: SDRF location]
 
