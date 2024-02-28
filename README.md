@@ -26,7 +26,7 @@ Generates "FLRcounts_noA.csv" and "FLRcounts_no_choice_noA.csv" where no-choice 
 
 Seperate script (Site_based_format_GSB_counts_pipeline.py) generates site based files and Gold-Silver-Bronze classification:
 
-      $py Site_based_format_GSB_counts_pipeline.py [file_list.txt] [Gold count threshold] [Silver count threshold] [optional: meta.csv] [optional: SDRF location]
+	$py Site_based_format_GSB_counts_pipeline.py [file_list.txt] [Gold count threshold] [Silver count threshold] [optional: meta.csv] [optional: SDRF location]
 
 Where file_list.txt contains the locations of analysis files (ie. PXD/Experiment_name), meta.csv contains available metadata (at least PMID) and SDRF location is the location of SDRF files (ie. Meta/SDRFs)
 
