@@ -10,7 +10,7 @@ import pandas as pd
 import time
 import sys
 
-f = lambda x, y : "" if y=="NA" else round(float(x[y]),2)
+f = lambda x, y : "" if y=="NA" else round(float([z if z != '' else '0' for z in x][y]),2)
 r = lambda x, y : x.replace("unknown_mod",str(y),1)
 
 #Extract PTM prophet output to df
@@ -84,8 +84,10 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
         #df.loc[i,'USI']="mzspec:" + PXD + ":" + df.loc[i,'Spectrum'].split(".")[0]  + ":scan:" + df.loc[i,'Spectrum'].split(".")[1] + ":" + peptide_temp + "/" + str(df.loc[i,'Charge'])
         #df.loc[i,'Sources'] = df.loc[i,'Spectrum'].split(".")[0]
     #print("--- %s seconds ---" % (time.time() - start_time))
+    df['Modification mass']=df['Modification mass'].str.replace(";;;",";")
     df['Modification mass']=df['Modification mass'].str.replace(";;",";")
     df['Modification mass']=df['Modification mass'].str.lstrip(";")
+
     df['Mass_shift']=df['Modification mass'].apply(lambda x: sum(list(map(float,x.split(";")[:-1]))) if x!=";" and x!="" else "")
     df['mass_diff'] = df['Calculated mass']-df['Experimental mass']
     df['ppm_error'] = (((df['mass_diff']) / df['Calculated mass']) * 1e6)

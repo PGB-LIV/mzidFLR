@@ -48,7 +48,7 @@ def calulate_decoy_FLR(input,decoy,targets, verbose):
 def model_FLR_binomial(file,FLR_output):
     print("Running: model_FLR_binomial")
     start_time = time.time()
-    df=pd.read_csv(file)
+    df=pd.read_csv(file,dtype={'Source': str})
     df = df.sort_values(['Binomial_final_score','Peptide','Peptide_pos'], ascending=[True, True,True])
     df['Peptide_mod_pos']=df['Peptide_mod']+"-"+df['PTM positions'].astype(str)
     USI_list=dict(df.groupby('Peptide_mod_pos')['USI'].apply(';'.join))

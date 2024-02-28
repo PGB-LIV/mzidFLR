@@ -201,7 +201,6 @@ def convert(input):
 
             #protein_pre=protein_dict[peptide_temp].split(";")[2]
             #protein_post=protein_dict[peptide_temp].split(";")[3]
-            protein.append(proteinID_dict[protein_temp])
             evalue.append(data_row[7])
             psm_prob.append(data_row[5])
             rt.append(data_row[8])
