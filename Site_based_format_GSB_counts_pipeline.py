@@ -9,9 +9,10 @@ import sys
 
 # requires csv file (meta.csv) with meta data, sdrf location (eg. "PRIDE/SDRFs/"), gold count and silver count - if meta or sdrf files not available, use "NA"
 
-# usage: python Site_based_format_GSB_counts_pipeline.py file_list.txt meta.csv PRIDE/SDRFs/ 5 2
+# usage:  $py Site_based_format_GSB_counts_pipeline.py [file_list.txt] [Gold count threshold] [Silver count threshold] [optional: meta.csv] [optional: SDRF location]
+# python Site_based_format_GSB_counts_pipeline.py file_list.txt 5 2 meta.csv PRIDE/SDRFs/
 # OR
-# python Site_based_format_GSB_counts_pipeline.py file_list.txt NA NA 5 2
+# python Site_based_format_GSB_counts_pipeline.py file_list.txt 5 2 NA NA
 
 #read in csv from FLR pipeline
 #DECOY and CONTAM removed, filtered for contains Phospho, exploded for site based, binomial adjustment and collapsed by peptidoform
@@ -22,16 +23,25 @@ folder_list = folder_list_file.replace('\n', '.').split(".")
 
 dataset_list=(list(set([a.split("/",1)[0] for a in folder_list])))
 
-meta_all = sys.argv[2]
-#meta_all=wd+"/meta.csv"
+try:
+    SDRF = sys.argv[5]
+except:
+    SDRF="NA"
+try:
+    meta_all = sys.argv[4]
+    if ".csv" not in meta_all:
+        SDRF = sys.argv[4]
+except:
+    meta_all="NA"
+
 if meta_all!="NA":
     with open(meta_all,'r') as f:
         reader = csv.reader(f)
         dict_all = {rows[0]:rows[1:] for rows in reader}
     f.close()
 
-gold_count = int(sys.argv[4])
-silver_count = int(sys.argv[5])
+gold_count = int(sys.argv[2])
+silver_count = int(sys.argv[3])
 
 if not os.path.exists("All_site_formats"):
     os.mkdir("All_site_formats")
@@ -75,8 +85,8 @@ for i in folder_list:
         source = source.replace("(","")
         source = source.replace(")","")
 
-        if sys.argv[3]!="NA":
-            meta_file = sys.argv[3]+"/"+i.split("/")[0]+".sdrf.tsv"
+        if SDRF!="NA":
+            meta_file = SDRF+"/"+i.split("/")[0]+".sdrf.tsv"
             meta=pd.read_csv(meta_file,sep="\t")
             meta['comment[data file]']=meta['comment[data file]'].str.split(".").str[0]
             meta['comment[data file]']=meta['comment[data file]'].str.replace(" ","_")
@@ -207,8 +217,8 @@ for i in folder_list:
 
     ######
 
-    if sys.argv[3]!="NA":
-        meta_file = sys.argv[3]+"/"+i.split("/")[0]+".sdrf.tsv"
+    if SDRF!="NA":
+        meta_file = SDRF+"/"+i.split("/")[0]+".sdrf.tsv"
         meta=pd.read_csv(meta_file,sep="\t")
         meta['comment[data file]']=meta['comment[data file]'].str.split(".").str[0]
         meta['comment[data file]']=meta['comment[data file]'].str.replace(" ","_")
@@ -244,7 +254,7 @@ for i in folder_list:
             cell_line_temp = []
             disease_temp = []
 
-            if sys.argv[3]!="NA":
+            if SDRF!="NA":
                 Sample_temp.append(dict["source name"][source])
                 PXD = dict["comment[proteomexchange accession number]"][source]
                 dataset_ID_temp.append(PXD)
