@@ -1,6 +1,7 @@
 import os
 import time
 import sys
+import pandas as pd
 
 import TPP_reusable.FDR as FDR
 import TPP_reusable.convert_mzIdentML_sax as convert_mzIdentML_sax
@@ -23,24 +24,23 @@ args = [arg for arg in sys.argv[1:] if not arg.startswith("-")]
 
 mod_id="NA"
 mod_mass="NA"
-#TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]
-if len(args)<3 or len(args)>6:
-    sys.exit("Provide mzid file, PXD identifier and modification of interest. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
+#TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method]
+if len(args)<3 or len(args)>7:
+	sys.exit("Provide mzid file, PXD identifier and modification of interest. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']")
 mzid_file=args[0]
 if mzid_file[-5:]!=".mzid":
     print(mzid_file[-5:])
-    sys.exit("Provide mzid file. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
+    sys.exit("Provide mzid file. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']")
 PXD = args[1]
 if "PXD" not in PXD:
-    sys.exit("Provide PXD identifier. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
+    sys.exit("Provide PXD identifier. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']")
 mod_info = args[2]
 if len(mod_info.split(":"))!=3:
-	sys.exit("Provide modification in format modification:target:decoy. E.g. Phospho:STY:A. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
+	sys.exit("Provide modification in format modification:target:decoy. E.g. Phospho:STY:A. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']")
 
 if len(args)>3:
 	for i in range(3,len(args)):
 		temp = args[i]
-		print(temp)
 		try:
 			float(temp)
 			FDR_cutoff=temp
@@ -49,7 +49,10 @@ if len(args)>3:
 				mod_id=temp.split(":")[0]
 				mod_mass=temp.split(":")[1]
 			else:
-				decoy_prefix=temp
+				if temp.lower()=="peptidoform" or temp.lower()=="site":
+					decoy_method = temp.lower()
+				else:
+					decoy_prefix=temp
 try:
 	print("Using decoy prefix: " + decoy_prefix)
 except:
@@ -60,6 +63,11 @@ try:
 except:
 	print("PSM FDR cutoff not specified, 0.01 default PSM FDR cutoff used")
 	FDR_cutoff=0.01
+try:
+	print("Using decoy mode: "+decoy_method)
+except:
+	print("Decoy method not specified, using \"Peptidoform\" decoy method")
+	decoy_method="peptidoform"
 
 if mod_id!="NA" and mod_mass!="NA":
 	print("Modification of interest  "+mod_id+":"+mod_mass)
@@ -105,13 +113,31 @@ print("Starting FLR calculations")
 print("--- %s seconds ---" % (time.time() - start_time))
 # Post analysis - FLR calulations and plots
 Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod,verbose,decoy_prefix)
-Post_analysis.model_FLR(sub + "/" + "Site-based.csv",mod,verbose, decoy_prefix)
-Post_analysis.calculate_decoy_FLR(sub + "/" + "Site-based_FLR.csv",decoy,targets, verbose)
-Binomial_adjustment.Binomial(sub + "/" + "Site-based_FLR.csv",decoy, targets, verbose)
+Post_analysis.model_FLR(sub + "/Site-based.csv",mod,verbose, decoy_prefix)
+Post_analysis.calculate_decoy_FLR(sub + "/Site-based.csv",decoy,targets, verbose,decoy_method)
+Binomial_adjustment.Binomial(sub + "/Site-based.csv",decoy, targets, verbose, decoy_method)
+
+output = sub + "/Site-based.csv"
+FLR_output = sub + "/binomial_peptidoform_collapsed_FLR.csv"
+if verbose:
+	output=output.replace(".csv","_verbose.csv")
+	FLR_output=FLR_output.replace(".csv","_verbose.csv")
+if decoy_method=="peptidoform":
+	output=output.replace(".csv","_peptidoform_decoy.csv")
+	FLR_output=FLR_output.replace(".csv","_peptidoform_decoy.csv")
+elif decoy_method=="site":
+	output=output.replace(".csv","_site_decoy.csv")
+	FLR_output=FLR_output.replace(".csv","_site_decoy.csv")
 
 #Peptidoform to peptide
-Post_analysis.peptidoform_to_peptide(sub+"/"+"binomial_peptidoform_collapsed_FLR.csv",mod, verbose)
-Binomial_adjustment.calulate_decoy_FLR(sub+"/"+"binomial_peptide_collapsed_FLR.csv",decoy,targets,verbose)
+Post_analysis.peptidoform_to_peptide(FLR_output,mod, verbose)
+Binomial_adjustment.calulate_decoy_FLR(FLR_output,decoy,targets,verbose, decoy_method)
+
+df = pd.read_csv(FLR_output)
+#Remove no choice - only BA pA FLR
+df = df[df.Peptide.str.count('S|T|Y|A')>df.Peptide_mod.str.count("Phospho")]
+df.to_csv(FLR_output.replace(".csv","_no_choice.csv"),index=False)
+Binomial_adjustment.calulate_decoy_FLR(FLR_output.replace(".csv","_no_choice.csv"),decoy,targets,verbose, decoy_method)
 
 print("Workflow complete --- %s seconds ---" % (time.time() - start_time))
 

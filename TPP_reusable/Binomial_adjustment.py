@@ -3,8 +3,9 @@ from scipy.stats import binom
 import numpy as np
 import time
 
-def calulate_decoy_FLR(input,decoy,targets, verbose):
+def calulate_decoy_FLR(input,decoy,targets, verbose, decoy_method):
     print("Running: Bimonial calulate_decoy_FLR")
+    print("Using decoy method: "+decoy_method)
     start_time = time.time()
     if verbose:
         if "verbose" not in input:
@@ -18,21 +19,34 @@ def calulate_decoy_FLR(input,decoy,targets, verbose):
     STY_A_ratio=STY_count/A_count
     pA_count = 0
     df.fillna('-')
-    for i in range(len(df)):
-        if decoy+"[" in df.loc[i,'Peptide_mod']:
-            pA_count+=1
-            df.loc[i,'DecoyP'] = 1
-            if df.loc[i,'Peptide_mod'].startswith(decoy+"[Acetyl]") and df.loc[i,'Protein position']==2:
+    if decoy_method=="peptidoform":
+        for i in range(len(df)):
+            if decoy+"[" in df.loc[i,'Peptide_mod']:
+                pA_count+=1
+                df.loc[i,'DecoyP'] = 1
+                if df.loc[i,'Peptide_mod'].startswith(decoy+"[Acetyl]") and df.loc[i,'Protein position']==2:
+                    df.loc[i,'DecoyP'] = 0
+                    pA_count-=1
+            else:
                 df.loc[i,'DecoyP'] = 0
-                pA_count-=1
-        else:
-            df.loc[i,'DecoyP'] = 0
 
-        df.loc[i, 'p'+decoy+'_count'] = pA_count
-        #decoy pX_FLR = STY:X ratio * pX_count * 2 / Count
-        #df.loc[i,decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count']*2)/(i+1)
-        #df.loc[i,'p'+decoy+'_FLR']=((STY_A_ratio*df.loc[i,'p'+decoy+'_count'])+df.loc[i,'p'+decoy+'_count'])/(i+1)
-        df.loc[i,'p'+decoy+'_FLR_BA']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count'])/(i+1-df.loc[i,'p'+decoy+'_count'])
+            df.loc[i, 'p'+decoy+'_count'] = pA_count
+            #decoy pX_FLR = STY:X ratio * pX_count * 2 / Count
+            #df.loc[i,decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count']*2)/(i+1)
+            #df.loc[i,'p'+decoy+'_FLR']=((STY_A_ratio*df.loc[i,'p'+decoy+'_count'])+df.loc[i,'p'+decoy+'_count'])/(i+1)
+            df.loc[i,'p'+decoy+'_FLR_BA']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count'])/(i+1-df.loc[i,'p'+decoy+'_count'])
+    else:
+        for i in range(len(df)):
+            peptide=df.loc[i,'Peptide']
+            PTM_loc=df.loc[i,'PTM positions']
+            if peptide[int(float(PTM_loc))-1]==decoy:
+                pA_count+=1
+                df.loc[i,'DecoyP'] = 1
+            else:
+                df.loc[i,'DecoyP'] = 0
+
+            df.loc[i, 'p'+decoy+'_count'] = pA_count
+            df.loc[i,'p'+decoy+'_FLR_BA']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count'])/(i+1-df.loc[i,'p'+decoy+'_count'])
 
     df['p'+decoy+'_q_value_BA'] = df['p'+decoy+'_FLR_BA']
     df['p'+decoy+'_q_value_BA'] = df.iloc[::-1]['p'+decoy+'_FLR_BA'].cummin()
@@ -40,6 +54,10 @@ def calulate_decoy_FLR(input,decoy,targets, verbose):
     #return as csv
     if verbose:
         df.to_csv(input,index=False)
+    if decoy=="peptidoform":
+        input=input.replace(".csv","_peptidoform_decoy.csv")
+    elif decoy=="site":
+        input=input.replace(".csv","_site_decoy.csv")
     else:
         df=df.drop(["DecoyP",'p'+decoy+'_count'], axis=1)
         df.to_csv(input,index=False)
@@ -98,16 +116,25 @@ def model_FLR_binomial(file,FLR_output):
     df.to_csv(FLR_output,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
 
-def Binomial(file,decoy, targets, verbose):
+def Binomial(file,decoy, targets, verbose, decoy_method):
     print("Running: Binomial")
     start_time = time.time()
     d="/".join(file.split("/")[:-1])
     output = d+"/binomial.csv"
+
     FLR_output = d+"/binomial_peptidoform_collapsed_FLR.csv"
     if verbose:
-        output.replace(".csv","_verbose.csv")
+        output=output.replace(".csv","_verbose.csv")
         FLR_output=FLR_output.replace(".csv","_verbose.csv")
         file=file.replace("Site-based_FLR","Site-based_verbose_FLR")
+    if decoy_method=="peptidoform":
+        output=output.replace(".csv","_peptidoform_decoy.csv")
+        FLR_output=FLR_output.replace(".csv","_peptidoform_decoy.csv")
+        file=file.replace("Site-based_FLR","Site-based_FLR_peptidoform_decoy")
+    elif decoy_method=="site":
+        output=output.replace(".csv","_site_decoy.csv")
+        FLR_output=FLR_output.replace(".csv","_site_decoy.csv")
+        file=file.replace("Site-based_FLR","Site-based_FLR_site_decoy")
     df = pd.read_csv(file)
     df['0.05FLR_threshold']=np.where(df['p'+decoy+'_FLR']<=0.05,1,0)
     df['0.01FLR_threshold'] = np.where(df['p' + decoy + '_FLR'] <= 0.01, 1, 0)
@@ -155,4 +182,4 @@ def Binomial(file,decoy, targets, verbose):
     print("Complete --- %s seconds ---" % (time.time() - start_time))
 
     model_FLR_binomial(output,FLR_output)
-    calulate_decoy_FLR(FLR_output,decoy,targets,verbose)
+    calulate_decoy_FLR(FLR_output,decoy,targets,verbose, decoy_method)

@@ -141,7 +141,7 @@ def peptidoform_to_peptide(file,mod,verbose):
     print("Complete--- %s seconds ---" % (time.time() - start_time))
 
 #calculate decoy FLR from decoy input
-def calculate_decoy_FLR(input,decoy,targets, verbose):
+def calculate_decoy_FLR(input,decoy,targets, verbose, decoy_method):
     print("Running: calculate_decoy_FLR")
     start_time = time.time()
     if verbose:
@@ -156,22 +156,35 @@ def calculate_decoy_FLR(input,decoy,targets, verbose):
 
     pA_count = 0
     df.fillna('-')
-    for i in range(len(df)):
-        if decoy+"[" in df.loc[i,'Peptide_mod']:
-            pA_count+=1
-            df.loc[i,'DecoyP'] = 1
-            if df.loc[i,'Peptide_mod'].startswith(decoy+"[Acetyl]") and df.loc[i,'Protein position']==2:
+    if decoy_method=="peptidoform":
+        for i in range(len(df)):
+            if decoy+"[" in df.loc[i,'Peptide_mod']:
+                pA_count+=1
+                df.loc[i,'DecoyP'] = 1
+                if df.loc[i,'Peptide_mod'].startswith(decoy+"[Acetyl]") and df.loc[i,'Protein position']==2:
+                    df.loc[i,'DecoyP'] = 0
+                    pA_count-=1
+            else:
                 df.loc[i,'DecoyP'] = 0
-                pA_count-=1
-        else:
-            df.loc[i,'DecoyP'] = 0
+    
+    
+            df.loc[i, 'p'+decoy+'_count'] = pA_count
+            #decoy pX_FLR = STY:X ratio * pX_count * 2 / Count
+            #df.loc[i,'p'+decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count']*2)/(i+1)
+            #df.loc[i,'p'+decoy+'_FLR']=((STY_A_ratio*df.loc[i,'p'+decoy+'_count'])+df.loc[i,'p'+decoy+'_count'])/(i+1)
+            df.loc[i,'p'+decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count'])/(i+1-df.loc[i,'p'+decoy+'_count'])
+    else:
+        for i in range(len(df)):
+            peptide=df.loc[i,'Peptide']
+            PTM_loc=df.loc[i,'PTM positions']
+            if peptide[int(float(PTM_loc))-1]==decoy:
+                pA_count+=1
+                df.loc[i,'DecoyP'] = 1
+            else:
+                df.loc[i,'DecoyP'] = 0
 
-
-        df.loc[i, 'p'+decoy+'_count'] = pA_count
-        #decoy pX_FLR = STY:X ratio * pX_count * 2 / Count
-        #df.loc[i,'p'+decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count']*2)/(i+1)
-        #df.loc[i,'p'+decoy+'_FLR']=((STY_A_ratio*df.loc[i,'p'+decoy+'_count'])+df.loc[i,'p'+decoy+'_count'])/(i+1)
-        df.loc[i,'p'+decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count'])/(i+1-df.loc[i,'p'+decoy+'_count'])
+            df.loc[i, 'p'+decoy+'_count'] = pA_count
+            df.loc[i,'p'+decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count'])/(i+1-df.loc[i,'p'+decoy+'_count'])
 
     df['p'+decoy+'_q_value'] = df['p'+decoy+'_FLR']
     df['p'+decoy+'_q_value'] = df.iloc[::-1]['p'+decoy+'_FLR'].cummin()
@@ -179,6 +192,10 @@ def calculate_decoy_FLR(input,decoy,targets, verbose):
     #return as csv
     if verbose:
         df.to_csv(input,index=False)
-    df=df.drop(["Count","DecoyP","pA_count",], axis=1)
+    if decoy_method=="peptidoform":
+        input=input.replace("Site-based_FLR.csv","Site-based_FLR_peptidoform_decoy.csv")
+    elif decoy_method=="site":
+        input=input.replace("Site-based_FLR.csv","Site-based_FLR_site_decoy.csv")
+    df=df.drop(["DecoyP","pA_count",], axis=1)
     df.to_csv(input,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
