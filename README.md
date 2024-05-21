@@ -7,9 +7,21 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 
 *TPP_reusable* folder contains supported module code for the analysis of Datasets using TPP PTMprophet mzid output files.
 
-      $py TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: FDR_cutoff]
+      $py TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']
 
 To run in verbose mode, include "--verbose" as command line parameter
+
+*[optional: decoy prefix]* -
+As default, uses "DECOY_" as database decoy prefix. Can be changed using this parameter
+
+*[optional: modification:mass(2dp)]* - 
+Optional parameter to include modification name for specified mod mass (given to 2dp)
+
+*[optional: FDR_cutoff]* - 
+As default, uses an FDR cutoff of 0.01 but can be changed using optional parameter
+
+*[optional: Decoy method 'peptidoform' or 'site']* -
+As default, uses "peptidoform decoy method" where decoys are considered any site where there is a pA decoy on the peptidoform. Decoy method optional parameter can be changed to "site" in order to consider decoys as just those where the site is a decoy amino acid, disregarding other sites in the peptidoform. 
 
 
 ![Workflow_image](https://user-images.githubusercontent.com/57440286/205335117-e3eea3e7-371c-4736-9d7a-2baf0f10996f.jpg)
