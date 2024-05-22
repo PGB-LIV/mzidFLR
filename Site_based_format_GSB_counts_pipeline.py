@@ -20,7 +20,10 @@ folder_list_file = open(sys.argv[1],"r")
 folder_list_file = folder_list_file.read()
 folder_list = folder_list_file.replace('\n', '.').split(".")
 
-dataset_list=(list(set([a.split("/",1)[0] for a in folder_list])))
+dataset_list=[]
+for i in folder_list:
+    index = [idx for idx, s in enumerate(i.split("/")) if 'PXD' in s][0]
+    dataset_list.append(i.split("/")[index])
 
 meta_all = sys.argv[2]
 #meta_all=wd+"/meta.csv"
