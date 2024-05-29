@@ -95,7 +95,7 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
                         "PTM positions":all_positions,"PTM Score": PTM_scores, "PTM_info":df['PTM info'].values,"Spectrum":df['Spectrum'].values,"mass_diff":df['mass_diff'].values
                            ,"ppm_error":df['ppm_error'].values, "Protein position":protein_positions,"Mass shift":df['Mass_shift'].values,"Charge":df['Charge'].values})
 
-    df2["USI"]="mzspec:"+PXD+":"+df2['Spectrum'].str.rsplit(".",3).str[0] +":scan:"+df2['Spectrum'].str.rsplit(".",2).str[1]+":"+df2['Peptide_mod']+"/"+df2['Charge'].astype(str)
+    df2["USI"]="mzspec:"+PXD+":"+df2['Spectrum'].str.rsplit(".",n=3).str[0] +":scan:"+df2['Spectrum'].str.rsplit(".",n=2).str[1]+":"+df2['Peptide_mod']+"/"+df2['Charge'].astype(str)
     df2['Source'] = df2['Spectrum'].str.split(".").str[0]
     #replace weird mods which cause issues with USI validation
     df2=df2.replace("pryo","pyro", regex=True)
