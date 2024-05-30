@@ -23,7 +23,8 @@ folder_list = folder_list_file.replace('\n', '.').split(".")
 dataset_list=[]
 for i in folder_list:
     index = [idx for idx, s in enumerate(i.split("/")) if 'PXD' in s][0]
-    dataset_list.append(i.split("/")[index])
+    if i.split("/")[index] not in dataset_list:
+        dataset_list.append(i.split("/")[index])
 
 meta_all = sys.argv[2]
 #meta_all=wd+"/meta.csv"
@@ -303,10 +304,10 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
             #####
 
             df = df[['Peptidoform Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform','Modification','Peptide Modification Position','Protein Modification Positions', 'PSM Probability', 'PTM Probability',
-            'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
-            'PSM Count Passing Threshold [0.05]','PSM Count Passing Threshold [0.01]', 'Source Dataset Identifier', 'Reanalysis Dataset Identifier','PubMedIDs',
-            'Sample ID', 'Organism', 'Organism Part', 'Cell Line', 'Disease Information', 'Universal Spectrum Identifier','opt_PSM count 0.01<P<=0.05','opt_PSM count 0.05<P<=0.19',
-            'opt_PSM count 0.19<P<=0.81','opt_PSM count 0.81<P<=0.95','opt_PSM count 0.95<P<0.99','opt_PSM count P>=0.99']]
+                     'Final Probability','Site Q-Value','Site Passes Threshold [0.05]','Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site',
+                     'PSM Count Passing Threshold [0.05]','PSM Count Passing Threshold [0.01]', 'Source Dataset Identifier', 'Reanalysis Dataset Identifier','PubMedIDs',
+                     'Sample ID', 'Organism', 'Organism Part', 'Cell Line', 'Disease Information', 'Universal Spectrum Identifier','opt_PSM count 0.01<P<=0.05','opt_PSM count 0.05<P<=0.19',
+                     'opt_PSM count 0.19<P<=0.81','opt_PSM count 0.81<P<=0.95','opt_PSM count 0.95<P<0.99','opt_PSM count P>=0.99']]
             df = df.replace("not applicable","NA")
             df.to_csv(output_location + "/"+i.replace("/","_")+"_Site_Peptidoform_centric.tsv", sep="\t", index=False)
 
@@ -440,7 +441,7 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                 plt.savefig(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos_categories"+choice+".png",dpi=300)
 
 
-        print("Peptidoform formats done, creating GSB counts")
+        print("Creating GSB counts, mapped to all proteins")
         print("Gold threshold: "+ str(gold_count) + "\nSilver threshold: "+ str(silver_count))
         flr_filter=0.05
         ### GSB counts
@@ -470,24 +471,24 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
 
                     if len(df_temp)>=1:
                         df_temp['PTM_residue']=df_temp.apply(lambda x: x['Peptide'][x['PTM positions']-1],axis=1)
+                        df_temp['All_PTM_protein_positions']=df_temp['All_PTM_protein_positions'].str.split(':')
+                        df_temp['All_Proteins']=df_temp['All_Proteins'].str.split(':')
+                        df_temp = df_temp.explode(['All_PTM_protein_positions','All_Proteins'])
+
+                        p = lambda x, y ,z: z[y.index(str(x))] #x=mod_pos, y=All_PTM_positions, z=All_PTM_protein_positions
+
+                        df_temp["Protein_PTM_pos"]=df_temp.apply(lambda x: p(x['PTM positions'],x['All_PTM_positions'].split(";"), x['All_PTM_protein_positions'].split(";")), axis=1)
+                        df_temp["Protein-pos"]=df_temp['All_Proteins']+"-"+df_temp['Protein_PTM_pos']
+
                     else:
                         df_temp['PTM_residue']=""
 
-                    df_temp['All_PTM_protein_positions']=df_temp['All_PTM_protein_positions'].str.split(':')
-                    df_temp['All_Proteins']=df_temp['All_Proteins'].str.split(':')
-                    df_temp = df_temp.explode(['All_PTM_protein_positions','All_Proteins'])
-
-                    p = lambda x, y ,z: z[y.index(str(x))] #x=mod_pos, y=All_PTM_positions, z=All_PTM_protein_positions
-
-                    df_temp["Protein_PTM_pos"]=df_temp.apply(lambda x: p(x['PTM positions'],x['All_PTM_positions'].split(";"), x['All_PTM_protein_positions'].split(";")), axis=1)
-                    df_temp["Protein-pos"]=df_temp['All_Proteins']+"-"+df_temp['Protein_PTM_pos']
-
                     df_temp['Protein_pos_res']=df_temp['Protein-pos']+"_"+df_temp['PTM_residue']
                     df_temp=df_temp.drop_duplicates(subset=('Protein_pos_res'),keep="last",inplace=False)
-
                     df_temp=df_temp[['Peptide_mod_pos', 'pA_q_value_BA','Binomial_final_score', 'Protein_pos_res']]
                     df_temp.rename(columns = {'pA_q_value_BA':dataset+"_FLR",'Binomial_final_score':dataset+'_BinomialScore','Peptide_mod_pos':dataset+"_peptide_mod_pos"}, inplace = True)
                     df_temp=df_temp.set_index('Protein_pos_res')
+
 
                     if dataset==dataset_list[0]:
                         df_final=df_temp
