@@ -54,9 +54,7 @@ def calulate_decoy_FLR(input,decoy,targets, verbose, decoy_method):
     #return as csv
     if verbose:
         df.to_csv(input,index=False)
-    if decoy=="peptidoform":
-        input=input.replace(".csv","_peptidoform_decoy.csv")
-    elif decoy=="site":
+    if decoy=="site" and "site_decoy.csv" not in input:
         input=input.replace(".csv","_site_decoy.csv")
     else:
         df=df.drop(["DecoyP",'p'+decoy+'_count'], axis=1)
@@ -127,11 +125,7 @@ def Binomial(file,decoy, targets, verbose, decoy_method):
         output=output.replace(".csv","_verbose.csv")
         FLR_output=FLR_output.replace(".csv","_verbose.csv")
         file=file.replace("Site-based_FLR","Site-based_verbose_FLR")
-    if decoy_method=="peptidoform":
-        output=output.replace(".csv","_peptidoform_decoy.csv")
-        FLR_output=FLR_output.replace(".csv","_peptidoform_decoy.csv")
-        file=file.replace("Site-based_FLR","Site-based_FLR_peptidoform_decoy")
-    elif decoy_method=="site":
+    if decoy_method=="site":
         output=output.replace(".csv","_site_decoy.csv")
         FLR_output=FLR_output.replace(".csv","_site_decoy.csv")
         file=file.replace("Site-based_FLR","Site-based_FLR_site_decoy")

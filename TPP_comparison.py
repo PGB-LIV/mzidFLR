@@ -114,19 +114,13 @@ print("--- %s seconds ---" % (time.time() - start_time))
 # Post analysis - FLR calulations and plots
 Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod,verbose,decoy_prefix)
 Post_analysis.model_FLR(sub + "/Site-based.csv",mod,verbose, decoy_prefix)
-Post_analysis.calculate_decoy_FLR(sub + "/Site-based.csv",decoy,targets, verbose,decoy_method)
-Binomial_adjustment.Binomial(sub + "/Site-based.csv",decoy, targets, verbose, decoy_method)
+Post_analysis.calculate_decoy_FLR(sub + "/Site-based_FLR.csv",decoy,targets, verbose,decoy_method)
+Binomial_adjustment.Binomial(sub + "/Site-based_FLR.csv",decoy, targets, verbose, decoy_method)
 
-output = sub + "/Site-based.csv"
 FLR_output = sub + "/binomial_peptidoform_collapsed_FLR.csv"
 if verbose:
-	output=output.replace(".csv","_verbose.csv")
 	FLR_output=FLR_output.replace(".csv","_verbose.csv")
-if decoy_method=="peptidoform":
-	output=output.replace(".csv","_peptidoform_decoy.csv")
-	FLR_output=FLR_output.replace(".csv","_peptidoform_decoy.csv")
 elif decoy_method=="site":
-	output=output.replace(".csv","_site_decoy.csv")
 	FLR_output=FLR_output.replace(".csv","_site_decoy.csv")
 
 #Peptidoform to peptide

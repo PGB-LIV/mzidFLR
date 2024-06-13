@@ -116,7 +116,7 @@ def model_FLR(file,mod,verbose, decoy_prefix):
 def peptidoform_to_peptide(file,mod,verbose):
     print("Running: peptidoform_to_peptide")
     start_time = time.time()
-    if verbose:
+    if verbose and "_verbose" not in file:
         file=file.replace(".csv","_verbose.csv")
     df=pd.read_csv(file)
     df['Peptide_mod_count'] = df['Peptide']+"_"+df['Peptide_mod'].str.count(mod).astype(str)
@@ -144,7 +144,7 @@ def peptidoform_to_peptide(file,mod,verbose):
 def calculate_decoy_FLR(input,decoy,targets, verbose, decoy_method):
     print("Running: calculate_decoy_FLR")
     start_time = time.time()
-    if verbose:
+    if verbose and "_verbose" not in input:
         input=input.replace("Site-based_FLR.csv","Site-based_verbose_FLR.csv")
     df = pd.read_csv(input,dtype={'PTM_positions': str})
     STY_count=0
@@ -185,17 +185,15 @@ def calculate_decoy_FLR(input,decoy,targets, verbose, decoy_method):
 
             df.loc[i, 'p'+decoy+'_count'] = pA_count
             df.loc[i,'p'+decoy+'_FLR']=(STY_A_ratio*df.loc[i,'p'+decoy+'_count'])/(i+1-df.loc[i,'p'+decoy+'_count'])
-
     df['p'+decoy+'_q_value'] = df['p'+decoy+'_FLR']
     df['p'+decoy+'_q_value'] = df.iloc[::-1]['p'+decoy+'_FLR'].cummin()
 
     #return as csv
     if verbose:
         df.to_csv(input,index=False)
-    if decoy_method=="peptidoform":
-        input=input.replace("Site-based_FLR.csv","Site-based_FLR_peptidoform_decoy.csv")
-    elif decoy_method=="site":
-        input=input.replace("Site-based_FLR.csv","Site-based_FLR_site_decoy.csv")
-    df=df.drop(["DecoyP","pA_count",], axis=1)
-    df.to_csv(input,index=False)
+    else:
+        if decoy_method=="site" and "site_decoy.csv" not in input:
+            input=input.replace("Site-based_FLR.csv","Site-based_FLR_site_decoy.csv")
+        df=df.drop(["DecoyP","pA_count",], axis=1)
+        df.to_csv(input,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
