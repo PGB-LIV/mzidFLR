@@ -127,7 +127,7 @@ for decoy in decoy_list:
                 output2.write(str(len(df))+",")
 
             # remove pA from counts
-            r = lambda x, y: 0 if x[int(y) - 1] != "A" else 1
+            r = lambda x, y: 0 if x[int(y) - 1] != "A" or int(y)==0 else 1
             df['Decoy Modification Site'] = df.apply(lambda x: r(x.Peptide_pos.split("-")[0], x.Peptide_pos.split("-")[1]), axis=1)
             df=df.loc[df["Decoy Modification Site"]!=1]
 

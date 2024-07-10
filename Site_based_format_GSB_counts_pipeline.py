@@ -18,7 +18,7 @@ import sys
 
 folder_list_file = open(sys.argv[1],"r")
 folder_list_file = folder_list_file.read()
-folder_list = folder_list_file.replace('\n', '.').split(".")
+folder_list = folder_list_file.replace('\n', ';').split(";")
 
 dataset_list=[]
 for i in folder_list:
@@ -37,7 +37,7 @@ if meta_all!="NA":
 gold_count = int(sys.argv[4])
 silver_count = int(sys.argv[5])
 
-r = lambda x, y : 0 if x[int(float(y))-1]!="A" else 1
+r = lambda x, y: 0 if x[int(y) - 1] != "A" or int(y)==0 else 1
 
 for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
     file=folder_list[0]+"/FDR_0.01/"+"binomial"+decoy_method+".csv"
@@ -99,10 +99,14 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                     organism.append("NA")
                     cell_line.append("NA")
 
-                try:
-                    PXD = dict["comment[proteomexchange accession number]"][source]
-                except:
-                    PXD="NA"
+                #try:
+                #    PXD = dict["comment[proteomexchange accession number]"][source]
+                #except:
+                #    PXD="NA"
+
+                PXD_index = [idx for idx, s in enumerate(i.split("/")) if 'PXD' in s][0]
+                PXD=i.split("/")[PXD_index]
+
                 try:
                     organism_part.append(dict["characteristics[organism part]"][source])
                 except:
@@ -245,6 +249,9 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                             protein_PTM += b + ";"
                 df.loc[x, 'Protein Modification Positions'] = protein_PTM[:-1]
 
+                PXD_index = [idx for idx, s in enumerate(i.split("/")) if 'PXD' in s][0]
+                PXD=i.split("/")[PXD_index]
+
                 source_all = df.loc[x, "All_Source"]
                 for source in source_all.split(";"):
                     source = source.replace("_raw", "")
@@ -260,8 +267,7 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
 
                     if sys.argv[3]!="NA":
                         Sample_temp.append(dict["source name"][source])
-                        PXD = dict["comment[proteomexchange accession number]"][source]
-                        dataset_ID_temp.append(PXD)
+                        #PXD = dict["comment[proteomexchange accession number]"][source]
                         organism_temp.append(dict["characteristics[organism]"][source])
                         try:
                             organism_part_temp.append(dict["characteristics[organism part]"][source])
@@ -274,7 +280,6 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                             disease_temp.append("NA")
                     else:
                         Sample_temp.append("NA")
-                        dataset_ID_temp.append("NA")
                         organism_temp.append("NA")
                         organism_part_temp.append("NA")
                         cell_line_temp.append("NA")
@@ -287,7 +292,8 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
 
                 PMID.append(";".join(map(str, list(set(PMID_temp)))))
                 Sample.append(";".join(map(str, list(set(Sample_temp)))))
-                dataset_ID.append(";".join(map(str, list(set(dataset_ID_temp)))))
+                #dataset_ID.append(";".join(map(str, list(set(dataset_ID_temp)))))
+                dataset_ID.append(PXD)
                 organism.append(";".join(map(str, list(set(organism_temp)))))
                 organism_part.append(";".join(map(str, list(set(organism_part_temp)))))
                 cell_line.append(";".join(map(str, list(set(cell_line_temp)))))
@@ -361,11 +367,12 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
 
                         df=df.loc[df['pA_q_value_BA']<=flr_filter]
 
+                        df['Experiment']=loc
+
                         if loc==folder_list_temp[0]:
                             df_temp=df
                         else:
                             df_temp=pd.concat([df_temp,df])
-
 
                     df_temp=df_temp.sort_values(['Peptide_mod_pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
                     df_temp=df_temp.drop_duplicates(subset=('Peptide_mod_pos'),keep="last",inplace=False)
@@ -379,6 +386,12 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                     df_temp['Protein_pos_res']=df_temp['Protein-pos']+"_"+df_temp['PTM_residue']
                     df_temp=df_temp.drop_duplicates(subset=('Protein_pos_res'),keep="last",inplace=False)
 
+                    df_temp['PXD']=dataset
+                    if dataset==dataset_list[0]:
+                        df_counts=df_temp
+                    else:
+                        df_counts=pd.concat([df_counts,df_temp])
+
                     df_temp=df_temp[['Peptide_mod_pos', 'pA_q_value_BA','Binomial_final_score', 'Protein_pos_res']]
                     df_temp.rename(columns = {'pA_q_value_BA':dataset+"_FLR",'Binomial_final_score':dataset+'_BinomialScore','Peptide_mod_pos':dataset+"_peptide_mod_pos"}, inplace = True)
                     df_temp=df_temp.set_index('Protein_pos_res')
@@ -387,6 +400,11 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                         df_final=df_temp
                     else:
                         df_final=pd.concat([df_final,df_temp],axis=1)
+
+                df_counts['PTM_residue']=df_counts['Protein_pos_res'].str.rsplit("_",1).str[-1]
+                counts_res=pd.crosstab(df_counts['PTM_residue'],df_counts['Experiment']).replace(0,np.nan).stack().reset_index().rename(columns={0:'Count'})
+                print(counts_res)
+                counts_res.to_csv(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_Residue_counts_"+decoy_method+choice+".csv", index=False)
 
                 for i in df_final.index.values.tolist():
                     df_final.loc[i,'Protein']=i.rsplit("-",1)[0]
@@ -416,7 +434,7 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                 cols.pop(cols.index('PTM_FLR_category'))
                 df_final = df_final[['Protein','Protein_pos','PTM_residue','PTM_FLR_category']+cols]
 
-                df_final.to_csv(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos"+choice+".csv", index=False)
+                df_final.to_csv(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos"+decoy_method+choice+".csv", index=False)
 
                 counts=pd.crosstab(df_final.PTM_residue,df_final.PTM_FLR_category).replace(0,np.nan).stack().reset_index().rename(columns={0:'Count'})
 
@@ -438,7 +456,7 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                     axes[i].set_xlabel("")
                 plt.tight_layout()
                 #plt.show()
-                plt.savefig(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos_categories"+choice+".png",dpi=300)
+                plt.savefig(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos_categories"+decoy_method+choice+".png",dpi=300)
 
 
         print("Creating GSB counts, mapped to all proteins")
@@ -467,8 +485,6 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                     df_temp=df_temp.sort_values(['Peptide_mod_pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
                     df_temp=df_temp.drop_duplicates(subset=('Peptide_mod_pos'),keep="last",inplace=False)
 
-                    df_temp=df_temp.sort_values(['Protein-pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
-
                     if len(df_temp)>=1:
                         df_temp['PTM_residue']=df_temp.apply(lambda x: x['Peptide'][x['PTM positions']-1],axis=1)
                         df_temp['All_PTM_protein_positions']=df_temp['All_PTM_protein_positions'].str.split(':')
@@ -482,7 +498,9 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
 
                     else:
                         df_temp['PTM_residue']=""
-
+						
+					
+                    df_temp=df_temp.sort_values(['Protein-pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
                     df_temp['Protein_pos_res']=df_temp['Protein-pos']+"_"+df_temp['PTM_residue']
                     df_temp=df_temp.drop_duplicates(subset=('Protein_pos_res'),keep="last",inplace=False)
                     df_temp=df_temp[['Peptide_mod_pos', 'pA_q_value_BA','Binomial_final_score', 'Protein_pos_res']]
@@ -523,7 +541,7 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                 cols.pop(cols.index('PTM_FLR_category'))
                 df_final = df_final[['Protein','Protein_pos','PTM_residue','PTM_FLR_category']+cols]
 
-                df_final.to_csv(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos"+choice+"_allProts.csv", index=False)
+                df_final.to_csv(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos"+decoy_method+choice+"_allProts.csv", index=False)
 
                 counts=pd.crosstab(df_final.PTM_residue,df_final.PTM_FLR_category).replace(0,np.nan).stack().reset_index().rename(columns={0:'Count'})
 
@@ -545,4 +563,4 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                     axes[i].set_xlabel("")
                 plt.tight_layout()
                 #plt.show()
-                plt.savefig(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos_categories"+choice+"_allProts.png",dpi=300)
+                plt.savefig(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_protein_pos_categories"+decoy_method+choice+"_allProts.png",dpi=300)
