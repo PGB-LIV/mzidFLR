@@ -7,7 +7,8 @@ Scripts for estimating false localisation rates (FLR) using two methods, model F
 
 *TPP_reusable* folder contains supported module code for the analysis of Datasets using TPP PTMprophet mzid output files.
 
-      $py TPP_comparison.py [mzid_file] [PXD] [mod:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']
+      $py TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]
+
 
 To run in verbose mode, include "--verbose" as command line parameter
 
@@ -22,6 +23,13 @@ As default, uses an FDR cutoff of 0.01 but can be changed using optional paramet
 
 *[optional: Decoy method 'peptidoform' or 'site']* -
 As default, uses "peptidoform decoy method" where decoys are considered any site where there is a pA decoy on the peptidoform. Decoy method optional parameter can be changed to "site" in order to consider decoys as just those where the site is a decoy amino acid, disregarding other sites in the peptidoform. 
+
+*[optional: target species prefix]* -
+Target species can be specified using this parameter. If contaminant prefix is given as "UNKNOWN" (ie. prefix is absent and needs to be added), then this MUST be specified, to allow removal of target species from contaminants list when assigning contaminant proteins. 
+
+*[optional: contaminant prefix]* -
+As default, uses "CONTAM_" as database contaminant prefix. Can be changed using this parameter. 
+If contaminant prefix absent from database, use "contam_UNKNOWN"
 
 
 ![Workflow_image](https://user-images.githubusercontent.com/57440286/205335117-e3eea3e7-371c-4736-9d7a-2baf0f10996f.jpg)
@@ -71,13 +79,15 @@ Generates "Site-PSM-centric.tsv" and "Site-Peptidofom-centric.tsv" per experimen
 		Filter for PSM level FDR (default = 0.01 or specified threshold)
 		Expand to site based format – one site per row
 		Filter for specified modification (based on mzid MS name, if unknown mod use optional mod mass mapping [optional: modification:mass(2dp)])
-		Remove decoy and contaminant hits
+  		If contaminant prefix is "UNKNOWN", contaminant prefix is added, removing target species from contaminant list
+		Remove decoy and contaminant hits, where all proteins are decoy or contaminant
 		Calculate model FLR
 		- 1-(PTMscore*PSMscore) / SiteCount
 		Calculate decoy FLR
 		- Ratio* DecoyCount / (SiteCount-DecoyCount)
 			Ratio = TargetCount/DecoyCount (ie.STY/A) 
-			DecoyCount=count of sites where peptidoform contains decoy modification, regardless of site
+			DecoyCount=count of sites where peptidoform contains decoy modification, regardless of site (using Peptidoform decoy method)
+   				alternatively, DecoyCount = count of sites with decoy modification, regardless of peptidoform (using Site decoy method)
 		Input=FDR_output.csv
 		Output=Site-based_FLR.csv
 	Binomial_adjustment.py
