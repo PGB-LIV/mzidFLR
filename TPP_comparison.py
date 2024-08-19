@@ -24,23 +24,24 @@ args = [arg for arg in sys.argv[1:] if not arg.startswith("-")]
 
 mod_id="NA"
 mod_mass="NA"
-#TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method]
-if len(args)<3 or len(args)>7:
-	sys.exit("Provide mzid file, PXD identifier and modification of interest. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']")
+#TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]
+if len(args)<3 or len(args)>9:
+	sys.exit("Provide mzid file, PXD identifier and modification of interest. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site'] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]")
 mzid_file=args[0]
 if mzid_file[-5:]!=".mzid":
     print(mzid_file[-5:])
-    sys.exit("Provide mzid file. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']")
+    sys.exit("Provide mzid file. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site'] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]")
 PXD = args[1]
 if "PXD" not in PXD:
-    sys.exit("Provide PXD identifier. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']")
+    sys.exit("Provide PXD identifier. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site'] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]")
 mod_info = args[2]
 if len(mod_info.split(":"))!=3:
-	sys.exit("Provide modification in format modification:target:decoy. E.g. Phospho:STY:A. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site']")
+	sys.exit("Provide modification in format modification:target:decoy. E.g. Phospho:STY:A. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site'] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]")
 
 if len(args)>3:
 	for i in range(3,len(args)):
 		temp = args[i]
+		print(temp)
 		try:
 			float(temp)
 			FDR_cutoff=temp
@@ -48,6 +49,10 @@ if len(args)>3:
 			if (":") in temp:
 				mod_id=temp.split(":")[0]
 				mod_mass=temp.split(":")[1]
+			elif ("species_") in temp:
+				species=temp.split("_")[1]
+			elif ("contam_") in temp:
+				contam=temp.split("_")[1]
 			else:
 				if temp.lower()=="peptidoform" or temp.lower()=="site":
 					decoy_method = temp.lower()
@@ -68,6 +73,20 @@ try:
 except:
 	print("Decoy method not specified, using \"Peptidoform\" decoy method")
 	decoy_method="peptidoform"
+try:
+    print("The target species is: " + species)
+except:
+    print("The target species is unknown")
+    species = "NA"
+try:
+    print("The contaminant prefix is: " + contam)
+except:
+	print("Contaminant removal mode not specified. \n Using default contaminant prefix: CONTAM")
+	contam="CONTAM"
+
+if contam.upper()=="UNKNOWN" and species == "NA":
+	sys.exit("If contamintant prefix is \"UNKNOWN\", then target species must be set. \n Provide mzid file, PXD identifier and modification of interest. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site'] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]")
+
 
 if mod_id!="NA" and mod_mass!="NA":
 	print("Modification of interest  "+mod_id+":"+mod_mass)
@@ -112,8 +131,8 @@ print("FDR calculation done")
 print("Starting FLR calculations")
 print("--- %s seconds ---" % (time.time() - start_time))
 # Post analysis - FLR calulations and plots
-Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod,verbose,decoy_prefix)
-Post_analysis.model_FLR(sub + "/Site-based.csv",mod,verbose, decoy_prefix)
+Post_analysis.site_input = Post_analysis.site_based(FDR_output,FDR_cutoff,mod,verbose,decoy_prefix,species,contam)
+Post_analysis.model_FLR(sub + "/Site-based.csv",mod,verbose, decoy_prefix,species,contam)
 Post_analysis.calculate_decoy_FLR(sub + "/Site-based_FLR.csv",decoy,targets, verbose,decoy_method)
 Binomial_adjustment.Binomial(sub + "/Site-based_FLR.csv",decoy, targets, verbose, decoy_method)
 

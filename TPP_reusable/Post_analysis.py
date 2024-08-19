@@ -1,6 +1,6 @@
 #Expands PSMs to site-based format, where one row is one site on a peptide. Calculates FLR calculations.
 
-
+import os
 import pandas as pd
 import numpy as np
 import sys
@@ -40,9 +40,50 @@ def explode(df, lst_cols, fill_value='', preserve_index=False):
     print("\t Complete --- %s seconds ---" % (time.time() - start_time))
 
     return res
+    
+def contam_prefix(df,species,contam):
+    print("\t Running: contam_prefix")
+    start_time=time.time()
+    # If there is no prefix for contaminants, add an identifier 
+    if contam.upper() == "UNKNOWN":
+        # File containing cRAP contaminants
+        file_path = os.path.dirname(os.path.abspath(__file__))
+        contaminants_file = open(file_path + "/cRAP_contaminants.txt","r")
+        contaminants_list = []
+        for line in contaminants_file:
+            row = line.strip()
+            contaminants_list.append(row)
+        # Filter out contaminants from the target species
+        non_target_contaminants = [contaminants for contaminants in contaminants_list if species not in contaminants]
+        # Contaminant prefix
+        contam = "CONTAM_" 
+        for i in range(len(df)):
+            all_prots = ""
+            # Loop through "All_Proteins" in each row
+            for protein in df.iloc[i] ["All_Proteins"].split(":"):
+                # If contaminants were added via FragPipe, ID will start with "sp"    
+                if protein.startswith("sp"):
+                    protein_id = protein.split("|")[2] # obtain protein ID (same as in contaminants list)
+                    # If the protein ID is in the contaminants list, add a prefix 
+                    if protein_id in non_target_contaminants:
+                        all_prots += contam + protein+":"
+                    else:
+                        all_prots += protein + ":"
+                # If ID does not start with "sp", then it is likely not a contaminant so do not add prefix           
+                else:
+                    all_prots += protein + ":"
+            # Remove trailing colon from list of proteins
+            all_prots = all_prots[:-1]
+            # Add the new string of "All_Proteins" back to the df (now including prefix with contaminants)
+            df.at[i,"All_Proteins"] = all_prots    
+        # Indicate the prefix that has now been used for contaminants           
+    print("\t The contaminant prefix is " + contam)
+    print("\t Complete --- %s seconds ---" % (time.time() - start_time))
 
+    return df, contam
+    
 #Explode rows for each PSM postion - for each mod in peptide, a seperate row will show PSM score and corresponding PTM position/score for each site on the peptide
-def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix):
+def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix, species, contam):
     print("Running: site_based")
     start_time = time.time()
     if verbose:
@@ -54,7 +95,6 @@ def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix):
     df = df.sort_values(['Peptide', 'Score','PTM Score'], ascending=[True, True, True])
     df['All_Proteins']=df['Protein']
     df['All_USI']=df['USI']
-
     df.dropna(subset=['PTM'], inplace=True)
     df=df.fillna('')
     df['All_PTMs'] = df['PTM']
@@ -74,9 +114,75 @@ def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix):
     df = explode(df, ['PTM', 'PTM Score', 'PTM positions', 'Protein position'], fill_value='')
     #df = df[df.PTM == "Phospho"]
     df = df.loc[df['PTM'].str.lower()==mod.lower()]
-    df = df[~df.Protein.str.contains(decoy_prefix)]
-    df = df[~df.Protein.str.contains("CONTAM")]
+    #filter primary protein for contam and decoy
+    #df = df[~df.Protein.str.contains(decoy_prefix)]
+    #df = df[~df.Protein.str.contains("CONTAM")]
     df = df.reset_index(drop=True)
+    df, contam = contam_prefix(df, species, contam)
+
+    df['Protein'] = df['All_Proteins'].str.split(':').str[0] # set primary protein after contam prefix added
+    # filter based on all proteins, only remove if all proteins are decoy
+    df['Protein_count'] = df['All_Proteins'].str.count(":")+1
+    df['Decoy_count'] = df['All_Proteins'].str.count(decoy_prefix)
+    df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count'],1,0)
+    df = df[df.Decoy == 0]
+    df=df.drop(columns=['Protein_count', 'Decoy_count','Decoy'])
+    df = df.reset_index(drop=True)
+    #if primary protein is decoy, take next protein in all protein list as primary
+    for i in range(len(df)):
+        # Loop through "Proteins" in each row
+        if decoy_prefix in df.loc[i,"Protein"]: #If primary prot is decoy, replace with next target
+            prot_all=df.loc[i,"All_Proteins"].split(":")
+            prot_pos_all=df.loc[i,"All_PTM_protein_positions"].split(":")
+            all_ptm=df.loc[i,'All_PTM_positions']
+            counter=0
+            for prot in prot_all:
+                if decoy_prefix not in prot:
+                    df.loc[i,'Protein']=prot
+                    prot_pos=prot_pos_all[counter]
+                    if ";" in prot_pos:
+                        for x,y in zip(prot_pos.split(";"),all_ptm.split(";")):
+                            if y==df.loc[i,"PTM positions"]:
+                                df.loc[i,"Protein position"]=x
+                                break
+                    else:
+                        df.loc[i,"Protein position"]=prot_pos
+                        break
+                counter+=1
+    df = df.reset_index(drop=True)
+
+    # filter based on all proteins, only remove if all proteins are contaminants
+    df['Protein_count'] = df['All_Proteins'].str.count(":")+1
+    df['Contam_count'] = df['All_Proteins'].str.count(contam)
+    df['Contam'] = np.where(df['Protein_count']==df['Contam_count'],1,0)
+    df = df[df.Contam == 0]
+    df=df.drop(columns=['Protein_count', 'Contam_count','Contam'])
+    df = df.reset_index(drop=True)
+    #if primary protein is contaminant, take next protein in all protein list as primary
+    for i in range(len(df)):
+        # Loop through "Proteins" in each row
+        if contam in df.loc[i,"Protein"]: #If primary prot is contaminant, replace with next target
+            prot_all=df.loc[i,"All_Proteins"].split(":")
+            prot_pos_all=df.loc[i,"All_PTM_protein_positions"].split(":")
+            all_ptm=df.loc[i,'All_PTM_positions']
+            counter=0
+            for prot in prot_all:
+                if contam not in prot:
+                    df.loc[i,'Protein']=prot
+                    prot_pos=prot_pos_all[counter]
+                    if ";" in prot_pos:
+                        for x,y in zip(prot_pos.split(";"),all_ptm.split(";")):
+                            if y==df.loc[i,"PTM positions"]:
+                                df.loc[i,"Protein position"]=x
+                                break
+                    else:
+                        df.loc[i,"Protein position"]=prot_pos
+                        break
+                counter+=1
+    df = df.reset_index(drop=True)
+
+    df.to_csv("TEMP.csv")
+
     df['Peptide_pos']  = df['Peptide']+"-"+df['PTM positions'].astype(str)
     df['PTM_final_prob'] = pd.to_numeric(df['Score']) * pd.to_numeric(df['PTM Score'])
     df['Peptide']=df['Peptide'].astype(str)
@@ -85,7 +191,7 @@ def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix):
     print("Complete --- %s seconds ---" % (time.time() - start_time))
 
 #model FLR from combined probability: 1-(PSM prob*PTM prob)/Count
-def model_FLR(file,mod,verbose, decoy_prefix):
+def model_FLR(file,mod,verbose, decoy_prefix,species,contam):
     print("Running: Model_FLR")
     start_time = time.time()
     if verbose:
@@ -96,8 +202,69 @@ def model_FLR(file,mod,verbose, decoy_prefix):
     df = df.loc[df['PTM'].str.lower()==mod.lower()]
     if len(df)==0:
         sys.exit("Modification not found, check spelling or try specifiying modification name and mass to 2dp (eg. Phospho:79.97) \n TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff]")
-    df = df[~df.Protein.str.contains(decoy_prefix,na=False)]
-    df = df[~df.Protein.str.contains("CONTAM",na=False)]
+    #df = df[~df.Protein.str.contains(decoy_prefix,na=False)]
+    #df = df[~df.Protein.str.contains("CONTAM",na=False)]
+    df = df.reset_index(drop=True)
+
+    df, contam = contam_prefix(df, species, contam)
+    # filter based on all proteins, only remove if all proteins are decoy
+    df['Protein_count'] = df['All_Proteins'].str.count(":")+1
+    df['Decoy_count'] = df['All_Proteins'].str.count(decoy_prefix)
+    df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count'],1,0)
+    df = df[df.Decoy == 0]
+    df=df.drop(columns=['Protein_count', 'Decoy_count','Decoy'])
+    df = df.reset_index(drop=True)
+    #if primary protein is decoy, take next protein in all protein list as primary
+    for i in range(len(df)):
+        # Loop through "Proteins" in each row
+        if decoy_prefix in df.loc[i,"Protein"]: #If primary prot is decoy, replace with next target
+            prot_all=df.loc[i,"All_Proteins"].split(":")
+            prot_pos_all=df.loc[i,"All_PTM_protein_positions"].split(":")
+            all_ptm=df.loc[i,'All_PTM_positions']
+            counter=0
+            for prot in prot_all:
+                if decoy_prefix not in prot:
+                    df.loc[i,'Protein']=prot
+                    prot_pos=prot_pos_all[counter]
+                    if ";" in prot_pos:
+                        for x,y in zip(prot_pos.split(";"),all_ptm.split(";")):
+                            if y==df.loc[i,"PTM positions"]:
+                                df.loc[i,"Protein position"]=x
+                                break
+                    else:
+                        df.loc[i,"Protein position"]=prot_pos
+                        break
+                counter+=1
+    df = df.reset_index(drop=True)
+    # filter based on all proteins, only remove if all proteins are contaminants
+    df['Protein_count'] = df['All_Proteins'].str.count(":")+1
+    df['Contam_count'] = df['All_Proteins'].str.count(contam)
+    df['Contam'] = np.where(df['Protein_count']==df['Contam_count'],1,0)
+    df = df[df.Contam == 0]
+    df=df.drop(columns=['Protein_count', 'Contam_count','Contam'])
+    df = df.reset_index(drop=True)
+    #if primary protein is contaminant, take next protein in all protein list as primary
+    for i in range(len(df)):
+        # Loop through "Proteins" in each row
+        if contam in df.loc[i,"Protein"]: #If primary prot is contaminant, replace with next target
+            prot_all=df.loc[i,"All_Proteins"].split(":")
+            prot_pos_all=df.loc[i,"All_PTM_protein_positions"].split(":")
+            all_ptm=df.loc[i,'All_PTM_positions']
+            counter=0
+            for prot in prot_all:
+                if contam not in prot:
+                    df.loc[i,'Protein']=prot
+                    prot_pos=prot_pos_all[counter]
+                    if ";" in prot_pos:
+                        for x,y in zip(prot_pos.split(";"),all_ptm.split(";")):
+                            if y==df.loc[i,"PTM positions"]:
+                                df.loc[i,"Protein position"]=x
+                                break
+                    else:
+                        df.loc[i,"Protein position"]=prot_pos
+                        break
+                counter+=1
+
     df = df.reset_index(drop=True)
     df['Peptide']=df['Peptide'].astype(str)
     df = df.sort_values(by=(['PTM_final_prob','Peptide','Peptide_pos']), ascending=[False,True,True])
