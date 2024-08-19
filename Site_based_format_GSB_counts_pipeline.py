@@ -7,11 +7,14 @@ import os
 #import json
 import sys
 
-# requires csv file (meta.csv) with meta data, sdrf location (eg. "PRIDE/SDRFs/"), gold count and silver count - if meta or sdrf files not available, use "NA"
+"""
+Requires csv file (meta.csv) with meta data, sdrf location (eg. "PRIDE/SDRFs/"), gold count and silver count - if meta or sdrf files not available, use "NA"
+Can also accept optional decoy and contam prefix, if not specified "DECOY" and "CONTAM" will be used as default
+"""
 
-# usage: python Site_based_format_GSB_counts_pipeline.py file_list.txt meta.csv PRIDE/SDRFs/ 5 2
+# usage: python Site_based_format_GSB_counts_pipeline.py file_list.txt meta.csv PRIDE/SDRFs/ 5 2 [optional: DECOY_Prefix ie. DECOY] [optional: CONTAM_prefix ie. CONTAM]
 # OR
-# python Site_based_format_GSB_counts_pipeline.py file_list.txt NA NA 5 2
+# python Site_based_format_GSB_counts_pipeline.py file_list.txt NA NA 5 2 [optional: DECOY_Prefix ie. DECOY] [optional: CONTAM_prefix ie. CONTAM]
 
 #read in csv from FLR pipeline
 #DECOY and CONTAM removed, filtered for contains Phospho, exploded for site based, binomial adjustment and collapsed by peptidoform
@@ -36,6 +39,16 @@ if meta_all!="NA":
 
 gold_count = int(sys.argv[4])
 silver_count = int(sys.argv[5])
+
+if len(sys.argv)>6:
+    decoy_prefix = sys.argv[6]
+    contam_prefix = sys.argv[7]
+else:
+    decoy_prefix = "DECOY"
+    contam_prefix = "CONTAM"
+
+print(f"Using decoy prefix: {decoy_prefix}")
+print(f"Using contam prefix: {contam_prefix}")
 
 r = lambda x, y: 0 if x[int(y) - 1] != "A" or int(y)==0 else 1
 
@@ -374,8 +387,12 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                         else:
                             df_temp=pd.concat([df_temp,df])
 
+                    PSM_threshold=dict(df_temp.groupby('Peptide_mod_pos')['0.05FLR_threshold_count'].sum())
+
                     df_temp=df_temp.sort_values(['Peptide_mod_pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
                     df_temp=df_temp.drop_duplicates(subset=('Peptide_mod_pos'),keep="last",inplace=False)
+
+                    df_temp['0.05FLR_threshold_count']=df_temp['Peptide_mod_pos'].map(PSM_threshold)
 
                     df_temp=df_temp.sort_values(['Protein-pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
 
@@ -384,7 +401,13 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                     else:
                         df_temp['PTM_residue']=""
                     df_temp['Protein_pos_res']=df_temp['Protein-pos']+"_"+df_temp['PTM_residue']
+
+                    PSM_threshold_2=dict(df_temp.groupby('Protein_pos_res')['0.05FLR_threshold_count'].sum())
+
                     df_temp=df_temp.drop_duplicates(subset=('Protein_pos_res'),keep="last",inplace=False)
+
+                    #column for all PSM counts at 5%FLR
+                    df_temp['Sum_of_PSM_counts(5%FLR)']=df_temp['Protein_pos_res'].map(PSM_threshold_2)
 
                     df_temp['PXD']=dataset
                     if dataset==dataset_list[0]:
@@ -392,8 +415,8 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                     else:
                         df_counts=pd.concat([df_counts,df_temp])
 
-                    df_temp=df_temp[['Peptide_mod_pos', 'pA_q_value_BA','Binomial_final_score', 'Protein_pos_res']]
-                    df_temp.rename(columns = {'pA_q_value_BA':dataset+"_FLR",'Binomial_final_score':dataset+'_BinomialScore','Peptide_mod_pos':dataset+"_peptide_mod_pos"}, inplace = True)
+                    df_temp=df_temp[['Peptide_mod_pos', 'pA_q_value_BA','Binomial_final_score', 'Protein_pos_res','Sum_of_PSM_counts(5%FLR)','0.05FLR_threshold_count']]
+                    df_temp.rename(columns = {'pA_q_value_BA':dataset+"_FLR",'Binomial_final_score':dataset+'_BinomialScore','Peptide_mod_pos':dataset+"_peptide_mod_pos",'Sum_of_PSM_counts(5%FLR)':dataset+"_Sum_of_PSM_counts(5%FLR)",'0.05FLR_threshold_count':dataset+"_peptidoform_PSMcount(5%FLR)"}, inplace = True)
                     df_temp=df_temp.set_index('Protein_pos_res')
 
                     if dataset==dataset_list[0]:
@@ -401,7 +424,15 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                     else:
                         df_final=pd.concat([df_final,df_temp],axis=1)
 
-                df_counts['PTM_residue']=df_counts['Protein_pos_res'].str.rsplit("_",1).str[-1]
+                column_list=[PXD+"_Sum_of_PSM_counts(5%FLR)" for PXD in dataset_list]
+                df_final["Sum_of_PSM_counts(5%FLR)"]=df_final[column_list].sum(axis=1)
+
+                cols=df_final.columns.tolist()
+                cols=[cols[-1]]+cols[:-1]
+                df_final=df_final[cols]
+                df_final=df_final.drop(column_list, axis=1)
+
+                df_counts['PTM_residue']=df_counts['Protein_pos_res'].str.rsplit("_",n=1).str[-1]
                 counts_res=pd.crosstab(df_counts['PTM_residue'],df_counts['Experiment']).replace(0,np.nan).stack().reset_index().rename(columns={0:'Count'})
                 print(counts_res)
                 counts_res.to_csv(output_location + "/G"+str(gold_count)+"S"+str(silver_count)+"B_"+str(flr_filter)+"_Residue_counts_"+decoy_method+choice+".csv", index=False)
@@ -482,8 +513,12 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                             df_temp=pd.concat([df_temp,df])
 
 
+                    PSM_threshold=dict(df_temp.groupby('Peptide_mod_pos')['0.05FLR_threshold_count'].sum())
+
                     df_temp=df_temp.sort_values(['Peptide_mod_pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
                     df_temp=df_temp.drop_duplicates(subset=('Peptide_mod_pos'),keep="last",inplace=False)
+
+                    df_temp['0.05FLR_threshold_count']=df_temp['Peptide_mod_pos'].map(PSM_threshold)
 
                     if len(df_temp)>=1:
                         df_temp['PTM_residue']=df_temp.apply(lambda x: x['Peptide'][x['PTM positions']-1],axis=1)
@@ -502,9 +537,16 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
 					
                     df_temp=df_temp.sort_values(['Protein-pos','Binomial_final_score','pA_q_value_BA'],ascending=[True,True,False])
                     df_temp['Protein_pos_res']=df_temp['Protein-pos']+"_"+df_temp['PTM_residue']
+
+                    PSM_threshold_2=dict(df_temp.groupby('Protein_pos_res')['0.05FLR_threshold_count'].sum())
+
                     df_temp=df_temp.drop_duplicates(subset=('Protein_pos_res'),keep="last",inplace=False)
-                    df_temp=df_temp[['Peptide_mod_pos', 'pA_q_value_BA','Binomial_final_score', 'Protein_pos_res']]
-                    df_temp.rename(columns = {'pA_q_value_BA':dataset+"_FLR",'Binomial_final_score':dataset+'_BinomialScore','Peptide_mod_pos':dataset+"_peptide_mod_pos"}, inplace = True)
+
+                    #column for all PSM counts at 5%FLR
+                    df_temp['Sum_of_PSM_counts(5%FLR)']=df_temp['Protein_pos_res'].map(PSM_threshold_2)
+
+                    df_temp=df_temp[['Peptide_mod_pos', 'pA_q_value_BA','Binomial_final_score', 'Protein_pos_res','Sum_of_PSM_counts(5%FLR)','0.05FLR_threshold_count']]
+                    df_temp.rename(columns = {'pA_q_value_BA':dataset+"_FLR",'Binomial_final_score':dataset+'_BinomialScore','Peptide_mod_pos':dataset+"_peptide_mod_pos",'Sum_of_PSM_counts(5%FLR)':dataset+"_Sum_of_PSM_counts(5%FLR)",'0.05FLR_threshold_count':dataset+"_peptidoform_PSMcount(5%FLR)"}, inplace = True)
                     df_temp=df_temp.set_index('Protein_pos_res')
 
 
@@ -512,6 +554,17 @@ for decoy_method in ["","_peptidoform_decoy","_site_decoy"]:
                         df_final=df_temp
                     else:
                         df_final=pd.concat([df_final,df_temp],axis=1)
+
+                column_list=[PXD+"_Sum_of_PSM_counts(5%FLR)" for PXD in dataset_list]
+                df_final["Sum_of_PSM_counts(5%FLR)"]=df_final[column_list].sum(axis=1)
+
+                cols=df_final.columns.tolist()
+                cols=[cols[-1]]+cols[:-1]
+                df_final=df_final[cols]
+                df_final=df_final.drop(column_list, axis=1)
+
+                df_final = df_final[~df_final.index.str.contains(decoy_prefix)]
+                df_final = df_final[~df_final.index.str.contains(contam_prefix)]
 
                 for i in df_final.index.values.tolist():
                     df_final.loc[i,'Protein']=i.rsplit("-",1)[0]
