@@ -61,15 +61,9 @@ def contam_prefix(df,species,contam):
             all_prots = ""
             # Loop through "All_Proteins" in each row
             for protein in df.iloc[i] ["All_Proteins"].split(":"):
-                # If contaminants were added via FragPipe, ID will start with "sp"    
-                if protein.startswith("sp"):
-                    protein_id = protein.split("|")[2] # obtain protein ID (same as in contaminants list)
-                    # If the protein ID is in the contaminants list, add a prefix 
-                    if protein_id in non_target_contaminants:
-                        all_prots += contam + protein+":"
-                    else:
-                        all_prots += protein + ":"
-                # If ID does not start with "sp", then it is likely not a contaminant so do not add prefix           
+                # If the protein ID is in the contaminants list, add a prefix 
+                if any(protein_id in protein for protein_id in non_target_contaminants):
+                    all_prots += contam + protein+":"
                 else:
                     all_prots += protein + ":"
             # Remove trailing colon from list of proteins
@@ -206,7 +200,7 @@ def model_FLR(file,mod,verbose, decoy_prefix,species,contam):
     #df = df[~df.Protein.str.contains("CONTAM",na=False)]
     df = df.reset_index(drop=True)
 
-    df, contam = contam_prefix(df, species, contam)
+    #df, contam = contam_prefix(df, species, contam)
     # filter based on all proteins, only remove if all proteins are decoy
     df['Protein_count'] = df['All_Proteins'].str.count(":")+1
     df['Decoy_count'] = df['All_Proteins'].str.count(decoy_prefix)

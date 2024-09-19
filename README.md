@@ -30,6 +30,7 @@ Target species can be specified using this parameter. If contaminant prefix is g
 *[optional: contaminant prefix]* -
 As default, uses "CONTAM_" as database contaminant prefix. Can be changed using this parameter. 
 If contaminant prefix absent from database, use "contam_UNKNOWN"
+Using this paramter requires a list of contaminant IDs to be provided. We have supplied the file "cRAP_contaminants.txt" which contains the IDs of cRAP database contaminants. Any further contaminants used would need to be added to this list in order to be correctly identified.
 
 
 ![Workflow_image](https://user-images.githubusercontent.com/57440286/205335117-e3eea3e7-371c-4736-9d7a-2baf0f10996f.jpg)
