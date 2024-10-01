@@ -355,6 +355,6 @@ def calculate_decoy_FLR(input,decoy,targets, verbose, decoy_method):
     else:
         if decoy_method=="site" and "site_decoy.csv" not in input:
             input=input.replace("Site-based_FLR.csv","Site-based_FLR_site_decoy.csv")
-        df=df.drop(["DecoyP","pA_count",], axis=1)
+        df=df.drop(["DecoyP","p"+decoy+"_count",], axis=1)
         df.to_csv(input,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
