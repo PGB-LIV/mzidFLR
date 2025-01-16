@@ -48,6 +48,11 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
             PTMs.append(df.loc[i,'Modifications'][:-1])
             all_positions.append(df.loc[i,'Positions'][:-1])
             for a,b in zip(df.loc[i,'Positions'].split(";")[-2::-1],df.loc[i,'Modifications'].split(";")[-2::-1]):
+                try:
+                    float(b)
+                    b = "+" + str(b)
+                except:
+                    b = b
                 peptide_temp=peptide_temp[:int(a)]+"["+b+"]"+peptide_temp[int(a):]
             protein_start=df.loc[i,'Protein position']
             protein_position_list=""
@@ -105,8 +110,9 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
     df2=df2.replace("Carbamidomethylation","Carbamidomethyl", regex=True)
     df2=df2.replace("346\.21","iTRAQ8plex", regex=True)
     df2=df2.replace("304\.2","iTRAQ8plex", regex=True)
-    df2=df2.replace("\[229\.16\]","[TMT6plex]", regex=True)
+    df2=df2.replace("\[+229\.16\]","[TMT6plex]", regex=True)
     df2=df2.replace("42\.01","Acetyl", regex=True)
+
 
 
     return(df2)

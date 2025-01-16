@@ -118,50 +118,21 @@ def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix, species, contam):
     # filter based on all proteins, only remove if all proteins are decoy
     df['Protein_count'] = df['All_Proteins'].str.count(":")+1
     df['Decoy_count'] = df['All_Proteins'].str.count(decoy_prefix)
-    df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count'],1,0)
-    df = df[df.Decoy == 0]
-    df=df.drop(columns=['Protein_count', 'Decoy_count','Decoy'])
-    df = df.reset_index(drop=True)
-    #if primary protein is decoy, take next protein in all protein list as primary
-    for i in range(len(df)):
-        # Loop through "Proteins" in each row
-        if decoy_prefix in df.loc[i,"Protein"]: #If primary prot is decoy, replace with next target
-            prot_all=df.loc[i,"All_Proteins"].split(":")
-            prot_pos_all=df.loc[i,"All_PTM_protein_positions"].split(":")
-            all_ptm=df.loc[i,'All_PTM_positions']
-            counter=0
-            for prot in prot_all:
-                if decoy_prefix not in prot:
-                    df.loc[i,'Protein']=prot
-                    prot_pos=prot_pos_all[counter]
-                    if ";" in prot_pos:
-                        for x,y in zip(prot_pos.split(";"),all_ptm.split(";")):
-                            if y==df.loc[i,"PTM positions"]:
-                                df.loc[i,"Protein position"]=x
-                                break
-                    else:
-                        df.loc[i,"Protein position"]=prot_pos
-                        break
-                counter+=1
-    df = df.reset_index(drop=True)
-
-    # filter based on all proteins, only remove if all proteins are contaminants
-    df['Protein_count'] = df['All_Proteins'].str.count(":")+1
     df['Contam_count'] = df['All_Proteins'].str.count(contam)
-    df['Contam'] = np.where(df['Protein_count']==df['Contam_count'],1,0)
-    df = df[df.Contam == 0]
-    df=df.drop(columns=['Protein_count', 'Contam_count','Contam'])
+    df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count']+df['Contam_count'],1,0)
+    df = df[df.Decoy == 0]
+    df=df.drop(columns=['Protein_count', 'Decoy_count','Contam_count','Decoy'])
     df = df.reset_index(drop=True)
-    #if primary protein is contaminant, take next protein in all protein list as primary
+    #if primary protein is decoy or contaminant, take next protein in all protein list as primary
     for i in range(len(df)):
         # Loop through "Proteins" in each row
-        if contam in df.loc[i,"Protein"]: #If primary prot is contaminant, replace with next target
+        if decoy_prefix in df.loc[i,"Protein"] or contam in df.loc[i,"Protein"]: #If primary prot is decoy or contaminant, replace with next target
             prot_all=df.loc[i,"All_Proteins"].split(":")
             prot_pos_all=df.loc[i,"All_PTM_protein_positions"].split(":")
             all_ptm=df.loc[i,'All_PTM_positions']
             counter=0
             for prot in prot_all:
-                if contam not in prot:
+                if decoy_prefix not in prot and contam not in prot:
                     df.loc[i,'Protein']=prot
                     prot_pos=prot_pos_all[counter]
                     if ";" in prot_pos:
@@ -174,8 +145,6 @@ def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix, species, contam):
                         break
                 counter+=1
     df = df.reset_index(drop=True)
-
-    df.to_csv("TEMP.csv")
 
     df['Peptide_pos']  = df['Peptide']+"-"+df['PTM positions'].astype(str)
     df['PTM_final_prob'] = pd.to_numeric(df['Score']) * pd.to_numeric(df['PTM Score'])
@@ -204,49 +173,21 @@ def model_FLR(file,mod,verbose, decoy_prefix,species,contam):
     # filter based on all proteins, only remove if all proteins are decoy
     df['Protein_count'] = df['All_Proteins'].str.count(":")+1
     df['Decoy_count'] = df['All_Proteins'].str.count(decoy_prefix)
-    df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count'],1,0)
+    df['Contam_count'] = df['All_Proteins'].str.count(contam)
+    df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count']+df['Contam_count'],1,0)
     df = df[df.Decoy == 0]
-    df=df.drop(columns=['Protein_count', 'Decoy_count','Decoy'])
+    df=df.drop(columns=['Protein_count', 'Decoy_count','Contam_count','Decoy'])
     df = df.reset_index(drop=True)
     #if primary protein is decoy, take next protein in all protein list as primary
     for i in range(len(df)):
         # Loop through "Proteins" in each row
-        if decoy_prefix in df.loc[i,"Protein"]: #If primary prot is decoy, replace with next target
+        if decoy_prefix in df.loc[i,"Protein"] or contam in df.loc[i,"Protein"]: #If primary prot is decoy, replace with next target
             prot_all=df.loc[i,"All_Proteins"].split(":")
             prot_pos_all=df.loc[i,"All_PTM_protein_positions"].split(":")
             all_ptm=df.loc[i,'All_PTM_positions']
             counter=0
             for prot in prot_all:
-                if decoy_prefix not in prot:
-                    df.loc[i,'Protein']=prot
-                    prot_pos=prot_pos_all[counter]
-                    if ";" in prot_pos:
-                        for x,y in zip(prot_pos.split(";"),all_ptm.split(";")):
-                            if y==df.loc[i,"PTM positions"]:
-                                df.loc[i,"Protein position"]=x
-                                break
-                    else:
-                        df.loc[i,"Protein position"]=prot_pos
-                        break
-                counter+=1
-    df = df.reset_index(drop=True)
-    # filter based on all proteins, only remove if all proteins are contaminants
-    df['Protein_count'] = df['All_Proteins'].str.count(":")+1
-    df['Contam_count'] = df['All_Proteins'].str.count(contam)
-    df['Contam'] = np.where(df['Protein_count']==df['Contam_count'],1,0)
-    df = df[df.Contam == 0]
-    df=df.drop(columns=['Protein_count', 'Contam_count','Contam'])
-    df = df.reset_index(drop=True)
-    #if primary protein is contaminant, take next protein in all protein list as primary
-    for i in range(len(df)):
-        # Loop through "Proteins" in each row
-        if contam in df.loc[i,"Protein"]: #If primary prot is contaminant, replace with next target
-            prot_all=df.loc[i,"All_Proteins"].split(":")
-            prot_pos_all=df.loc[i,"All_PTM_protein_positions"].split(":")
-            all_ptm=df.loc[i,'All_PTM_positions']
-            counter=0
-            for prot in prot_all:
-                if contam not in prot:
+                if decoy_prefix not in prot and contam not in prot:
                     df.loc[i,'Protein']=prot
                     prot_pos=prot_pos_all[counter]
                     if ";" in prot_pos:
@@ -355,6 +296,6 @@ def calculate_decoy_FLR(input,decoy,targets, verbose, decoy_method):
     else:
         if decoy_method=="site" and "site_decoy.csv" not in input:
             input=input.replace("Site-based_FLR.csv","Site-based_FLR_site_decoy.csv")
-        df=df.drop(["DecoyP","pA_count",], axis=1)
+        df=df.drop(["DecoyP",'p'+decoy+'_FLR',], axis=1)
         df.to_csv(input,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))

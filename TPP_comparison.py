@@ -1,6 +1,7 @@
 import os
 import time
 import sys
+import re
 import pandas as pd
 
 import TPP_reusable.FDR as FDR
@@ -34,6 +35,8 @@ if mzid_file[-5:]!=".mzid":
 PXD = args[1]
 if "PXD" not in PXD:
     sys.exit("Provide PXD identifier. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site'] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]")
+#check this is just PXD code
+PXD=re.findall("PXD[0-9]*",PXD)[0]
 mod_info = args[2]
 if len(mod_info.split(":"))!=3:
 	sys.exit("Provide modification in format modification:target:decoy. E.g. Phospho:STY:A. TPP_comparison.py [mzid_file] [PXD] [modification:target:decoy] [optional: decoy prefix]  [optional: modification:mass(2dp)] [optional: PSM FDR_cutoff] [optional: Decoy method 'peptidoform' or 'site'] [optional: target species eg species_YEAST] [optional: contaminant prefix eg contam_CONTAM or if prefix is absent and needs to be added, contam_UNKNOWN]")
@@ -146,11 +149,11 @@ elif decoy_method=="site":
 Post_analysis.peptidoform_to_peptide(FLR_output,mod, verbose)
 Binomial_adjustment.calulate_decoy_FLR(FLR_output,decoy,targets,verbose, decoy_method)
 
-df = pd.read_csv(FLR_output)
-#Remove no choice - only BA pA FLR
-df = df[df.Peptide.str.count('S|T|Y|A')>df.Peptide_mod.str.count("Phospho")]
-df.to_csv(FLR_output.replace(".csv","_no_choice.csv"),index=False)
-Binomial_adjustment.calulate_decoy_FLR(FLR_output.replace(".csv","_no_choice.csv"),decoy,targets,verbose, decoy_method)
+# df = pd.read_csv(FLR_output)
+# #Remove no choice - only BA pA FLR
+# df = df[df.Peptide.str.count('S|T|Y|A')>df.Peptide_mod.str.count("Phospho")]
+# df.to_csv(FLR_output.replace(".csv","_no_choice.csv"),index=False)
+# Binomial_adjustment.calulate_decoy_FLR(FLR_output.replace(".csv","_no_choice.csv"),decoy,targets,verbose, decoy_method)
 
 print("Workflow complete --- %s seconds ---" % (time.time() - start_time))
 

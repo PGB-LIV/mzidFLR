@@ -4,7 +4,8 @@ import numpy as np
 import sys
 import os
 
-#usage: FLR_counts_pipeline.py filenames.txt
+#usage: FLR_counts_pipeline.py filenames.txt [optional:decoy amino acid]
+#ie. FLR_counts_pipeline.py filenames.txt A
 # where filenames.txt is a .txt file listing paths to analysis files 
 
 class TPPHandler(xml.sax.ContentHandler):
@@ -28,7 +29,13 @@ parser.setContentHandler(Handler)
 print(sys.argv[1])
 decoy_list_file = open(sys.argv[1],"r")
 decoy_list_file = decoy_list_file.read()
-decoy_list = decoy_list_file.replace('\n', '.').split(".") 
+decoy_list = decoy_list_file.replace('\n', '.').split(".")
+
+if len(sys.argv)>2:
+    decoy=sys.argv[2]
+else:
+    print("Using default decoy amino acid: A")
+    decoy="A"
 
 output_f="FLRcounts_no_choice_noA_decoy_methods.csv"
 output=open(output_f,"w")
@@ -141,44 +148,44 @@ for decoy in decoy_list:
             #Binomial0.1_FLR_Peptidoform_Site_Count
             output.write(str(len(df.loc[df["Binomial_final_prob_q_value"]<=0.10]))+",")
 
-            print(decoy+" 0.01: "+ str(len(df.loc[df["pA_q_value_BA"]<=0.01])))
+            print(decoy+" 0.01: "+ str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.01])))
             #Binomial_pA0.01_FLR_Peptidoform_Site_Count
-            output.write(str(len(df.loc[df["pA_q_value_BA"]<=0.01]))+",")
-            output2.write(str(len(df.loc[df["pA_q_value_BA"]<=0.01]))+",")
+            output.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.01]))+",")
+            output2.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.01]))+",")
             #FLR0.01 combined probability cutoff
-            output2.write(str(df.loc[df["pA_q_value_BA"]<=0.01]['PTM_final_prob'].min())+",")
-            print(decoy+" 0.05: "+ str(len(df.loc[df["pA_q_value_BA"]<=0.05])))
+            output2.write(str(df.loc[df["p"+decoy+"_q_value_BA"]<=0.01]['PTM_final_prob'].min())+",")
+            print(decoy+" 0.05: "+ str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.05])))
             #Binomial_pA0.05_FLR_Peptidoform_Site_Count
-            output.write(str(len(df.loc[df["pA_q_value_BA"]<=0.05]))+",")
-            output2.write(str(len(df.loc[df["pA_q_value_BA"]<=0.05]))+",")
+            output.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.05]))+",")
+            output2.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.05]))+",")
             #FLR0.05 combined probability cutoff
-            output2.write(str(df.loc[df["pA_q_value_BA"]<=0.05]['PTM_final_prob'].min())+",")
-            print(decoy+" 0.10: "+ str(len(df.loc[df["pA_q_value_BA"]<=0.10])))
+            output2.write(str(df.loc[df["p"+decoy+"_q_value_BA"]<=0.05]['PTM_final_prob'].min())+",")
+            print(decoy+" 0.10: "+ str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.10])))
             #Binomial_pA0.1_FLR_Peptidoform_Site_Count
-            output.write(str(len(df.loc[df["pA_q_value_BA"]<=0.10]))+",")
-            output2.write(str(len(df.loc[df["pA_q_value_BA"]<=0.10]))+",")
+            output.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.10]))+",")
+            output2.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.10]))+",")
             #FLR0.1 combined probability cutoff
-            output2.write(str(df.loc[df["pA_q_value_BA"]<=0.10]['PTM_final_prob'].min())+",")
+            output2.write(str(df.loc[df["p"+decoy+"_q_value_BA"]<=0.10]['PTM_final_prob'].min())+",")
 
             #no-choice
             if os.path.isfile(file.replace(".csv","_no_choice.csv")):
                 df=pd.read_csv(file.replace(".csv","_no_choice.csv"))
                 print("Without no choice:")
-                print(decoy+" 0.01: "+ str(len(df.loc[df["pA_q_value_BA"]<=0.01])))
+                print(decoy+" 0.01: "+ str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.01])))
                 #Binomial_pA0.01_FLR_Peptidoform_Site_Count_without_NoChoice
-                output.write(str(len(df.loc[df["pA_q_value_BA"]<=0.01]))+",")
+                output.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.01]))+",")
                 #FLR0.01 combined probability cutoff
-                output.write(str(df.loc[df["pA_q_value_BA"]<=0.01]['PTM_final_prob'].min())+",")
-                print(decoy+" 0.05: "+ str(len(df.loc[df["pA_q_value_BA"]<=0.05])))
+                output.write(str(df.loc[df["p"+decoy+"_q_value_BA"]<=0.01]['PTM_final_prob'].min())+",")
+                print(decoy+" 0.05: "+ str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.05])))
                 #Binomial_pA0.05_FLR_Peptidoform_Site_Count_without_NoChoice
-                output.write(str(len(df.loc[df["pA_q_value_BA"]<=0.05]))+",")
+                output.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.05]))+",")
                 #FLR0.05 combined probability cutoff
-                output.write(str(df.loc[df["pA_q_value_BA"]<=0.05]['PTM_final_prob'].min())+",")
-                print(decoy+" 0.10: "+ str(len(df.loc[df["pA_q_value_BA"]<=0.10])))
+                output.write(str(df.loc[df["p"+decoy+"_q_value_BA"]<=0.05]['PTM_final_prob'].min())+",")
+                print(decoy+" 0.10: "+ str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.10])))
                 #Binomial_pA0.1_FLR_Peptidoform_Site_Count_without_NoChoice
-                output.write(str(len(df.loc[df["pA_q_value_BA"]<=0.10]))+",")
+                output.write(str(len(df.loc[df["p"+decoy+"_q_value_BA"]<=0.10]))+",")
                 #FLR0.1 combined probability cutoff
-                output.write(str(df.loc[df["pA_q_value_BA"]<=0.1]['PTM_final_prob'].min()))
+                output.write(str(df.loc[df["p"+decoy+"_q_value_BA"]<=0.1]['PTM_final_prob'].min()))
 
     output2.write("\n")
     output.write("\n")
