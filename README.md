@@ -39,9 +39,10 @@ Using this paramter requires a list of contaminant IDs to be provided. We have s
 ## FLR_counts_pipeline.py
 Generates FLR counts for all searches:
 
-	$py FLR_counts_pipeline.p [file_list.txt]
+	$py FLR_counts_pipeline.py [file_list.txt] [optional:decoy amino acid]
  
-Where file_list.txt contains the locations of analysis files (ie. PXD/Experiment_name).
+Where file_list.txt contains the locations of analysis files (ie. PXD/Experiment_name). Decoy amino acid should be specified as single letter code ie.A.
+ eg. $py FLR_counts_pipeline.py filenames.txt A 
 
 Generates "FLRcounts_noA.csv" and "FLRcounts_no_choice_noA.csv" where no-choice peptides are ignored from FLR counts.
 
@@ -50,14 +51,37 @@ Generates "FLRcounts_noA.csv" and "FLRcounts_no_choice_noA.csv" where no-choice 
 
 Generates site based files and Gold-Silver-Bronze classification:
 
-	$py Site_based_format_GSB_counts_pipeline.py [file_list.txt] [Gold count threshold] [Silver count threshold] [optional: meta.csv] [optional: SDRF location]
+Can be ran in "SDRF mode", where SDRF files are present giving meta-data per sample:
 
-Where file_list.txt contains the locations of analysis files (ie. PXD/Experiment_name), meta.csv contains available metadata (at least PMID) and SDRF location is the location of SDRF files (ie. Meta/SDRFs)
+	$py Site_based_format_GSB_counts_pipeline.py [file_list.txt] [meta.tsv] [SDRF location] NA [Gold count threshold] [Silver count threshold] [optional: DECOY_Prefix ie. DECOY] [optional: CONTAM_prefix ie. CONTAM] [optional: modification:target:decoy ie. phospho:STY:A]
+ 
+ OR "Simple meta-data mode", where tsv files are given containing metadata per PXD in the given location "[simple meta location]":
 
-Generates "Site-PSM-centric.tsv" and "Site-Peptidofom-centric.tsv" per experiment as well as PXD merged files.
-	"GSB_0.05_protein_pos.csv" and "GSB_0.05_protein_pos_categories.png" show allocations and counts of Gold-Silver-Bronze categories
+ 	$py Site_based_format_GSB_counts_pipeline.py [file_list.txt] NA NA [simple meta location] [Gold count threshold] [Silver count threshold] [optional: DECOY_Prefix ie. DECOY] [optional: CONTAM_prefix ie. CONTAM] [optional: modification:target:decoy ie. phospho:STY:A]
 
+OR "No meta-data mode", where no SDRF or meta-data is available, all meta-data columns will be populated with "NA":
 
+	$py Site_based_format_GSB_counts_pipeline.py [file_list.txt] NA NA NA [Gold count threshold] [Silver count threshold] [optional: DECOY_Prefix ie. DECOY] [optional: CONTAM_prefix ie. CONTAM] [optional: modification:target:decoy ie. phospho:STY:A]
+
+Requires txt file with locations of analysis files (ie. PXD/Experiment_name), csv file (meta.csv) with meta data (at least PMID), sdrf file location (eg. "PRIDE/SDRFs/"), gold count and silver count - if meta or sdrf files not available, use "NA"
+Alternatively, can use simple meta data files, please give location (eg. "simple_meta/") when the meta data is the same for all files in a data set
+Can also accept optional decoy and contam prefix as well as modification:target:decoy, if not specified "DECOY" and "CONTAM" prefixes will be used as default 
+and phospho:STY:A used as search mod.
+
+Simple meta-data tsv files MUST contain the following column names: 
+- PubMedIDs
+- Sample ID
+- Organism
+- Organism Part
+- Cell Line
+- Disease Information
+ 
+
+Generates the following files: 
+- CSV file and png showing allocations and counts of Gold-Silver-Bronze categories, for single and all protein mapping for each decoy-method used in the pipeline. 
+- CSV giving the residue counts in each category for single and all protein mapping. 
+- TSV file for PSM and Peptidoform centiric formats; per experiment, merged per PXD dataset and merged all datasets. 
+- Uniprot format PSM/Peptidoform centric merged all datasets
 
 
 # Pipeline description
