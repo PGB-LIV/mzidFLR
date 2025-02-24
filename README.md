@@ -29,7 +29,7 @@ Target species can be specified using this parameter. If contaminant prefix is g
 
 *[optional: contaminant prefix]* -
 As default, uses "CONTAM_" as database contaminant prefix. Can be changed using this parameter. 
-If contaminant prefix absent from database, use "contam_UNKNOWN"
+If contaminant prefix absent from database, use "contam_UNKNOWN".
 Using this paramter requires a list of contaminant IDs to be provided. We have supplied the file "cRAP_contaminants.txt" which contains the IDs of cRAP database contaminants. Any further contaminants used would need to be added to this list in order to be correctly identified.
 
 
@@ -63,8 +63,8 @@ OR "No meta-data mode", where no SDRF or meta-data is available, all meta-data c
 
 	$py Site_based_format_GSB_counts_pipeline.py [file_list.txt] NA NA NA [Gold count threshold] [Silver count threshold] [optional: DECOY_Prefix ie. DECOY] [optional: CONTAM_prefix ie. CONTAM] [optional: modification:target:decoy ie. phospho:STY:A]
 
-Requires txt file with locations of analysis files (ie. PXD/Experiment_name), csv file (meta.csv) with meta data (at least PMID), sdrf file location (eg. "PRIDE/SDRFs/"), gold count and silver count - if meta or sdrf files not available, use "NA"
-Alternatively, can use simple meta data files, please give location (eg. "simple_meta/") when the meta data is the same for all files in a data set
+Requires txt file with locations of analysis files (ie. PXD/Experiment_name), csv file (meta.csv) with meta data (at least PMID), sdrf file location (eg. "PRIDE/SDRFs/"), gold count and silver count - if meta or sdrf files not available, use "NA".
+Alternatively, can use simple meta data files, please give location (eg. "simple_meta/") when the meta data is the same for all files in a data set.
 Can also accept optional decoy and contam prefix as well as modification:target:decoy, if not specified "DECOY" and "CONTAM" prefixes will be used as default 
 and phospho:STY:A used as search mod.
 
@@ -81,7 +81,7 @@ Generates the following files:
 - CSV file and png showing allocations and counts of Gold-Silver-Bronze categories, for single and all protein mapping for each decoy-method used in the pipeline. 
 - CSV giving the residue counts in each category for single and all protein mapping. 
 - TSV file for PSM and Peptidoform centiric formats; per experiment, merged per PXD dataset and merged all datasets. 
-- Uniprot format PSM/Peptidoform centric merged all datasets
+- Uniprot format PSM/Peptidoform centric merged all datasets.
 
 
 # Pipeline description
