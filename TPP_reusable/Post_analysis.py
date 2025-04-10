@@ -48,13 +48,14 @@ def contam_prefix(df,species,contam):
     if contam.upper() == "UNKNOWN":
         # File containing cRAP contaminants
         file_path = os.path.dirname(os.path.abspath(__file__))
-        contaminants_file = open(file_path + "/cRAP_contaminants.txt","r")
-        contaminants_list = []
-        for line in contaminants_file:
-            row = line.strip()
-            contaminants_list.append(row)
+        contaminants_file_path = os.path.join(file_path, "cRAP_contaminants.txt")
+        with open(contaminants_file_path, "r") as contaminants_file: 
+            contaminants_list = []
+            for line in contaminants_file:
+                row = line.strip()
+                contaminants_list.append(row)
         # Filter out contaminants from the target species
-        non_target_contaminants = [contaminants for contaminants in contaminants_list if species not in contaminants]
+        non_target_contaminants = [contaminant for contaminant in contaminants_list if species.upper() not in contaminant.upper()]
         # Contaminant prefix
         contam = "CONTAM_" 
         for i in range(len(df)):
@@ -296,6 +297,6 @@ def calculate_decoy_FLR(input,decoy,targets, verbose, decoy_method):
     else:
         if decoy_method=="site" and "site_decoy.csv" not in input:
             input=input.replace("Site-based_FLR.csv","Site-based_FLR_site_decoy.csv")
-        df=df.drop(["DecoyP",'p'+decoy+'_FLR',], axis=1)
+        df=df.drop(["DecoyP",'p'+decoy+'_count',], axis=1)
         df.to_csv(input,index=False)
     print("Complete --- %s seconds ---" % (time.time() - start_time))
