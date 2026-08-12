@@ -260,11 +260,23 @@ def per_folder (i,p, decoy_method):
         else:
             df['Site Passes Threshold [0.05]'] = np.where(df['p' + decoy_aa + '_q_value_BA'] <= 0.05, 1, 0)
             df['Site Passes Threshold [0.01]'] = np.where(df['p' + decoy_aa + '_q_value_BA'] <= 0.01, 1, 0)
-        df['Protein_count'] = df['All_Proteins'].str.count(":") + 1
+        
+        # split into list
+        df['All_Proteins_list'] = df['All_Proteins'].str.split(':')
+        # number of proteins
+        df['Protein_count'] = df['All_Proteins_list'].str.len()
         df['Decoy_count'] = df['All_Proteins'].str.count(decoy_prefix)
         df['Contam_count'] = df['All_Proteins'].str.count(contam_prefix)
-        # Decoy peptide = all proteins are decoys or contam
-        df['Decoy Peptide'] = np.where(df['Protein_count'] == df['Decoy_count'] + df['Contam_count'], 1, 0)
+        # for each protein, if it starts with the contam or decoy prefix, sum output
+        df['decoy_contam_count'] = df['All_Proteins_list'].apply(
+        lambda proteins: sum(
+        p.startswith(decoy_prefix) or p.startswith(contam_prefix) for p in proteins
+        ))
+        df['Decoy / Contaminant Peptide'] = np.where(df['Protein_count'] == df['decoy_contam_count'], 1, 0)
+
+        df=df.drop(columns=['All_Proteins_list', 'decoy_contam_count'])
+
+       
         df['Decoy Modification Site'] = df.apply(lambda x: r(x.Pep_pos.split("-")[0], x.Pep_pos.split("-")[1]), axis=1)
         if p == "PSM":
             df['PSM Site ID'] = df.index
@@ -381,7 +393,7 @@ for decoy_method in ["", "_peptidoform_decoy", "_site_decoy"]:
 
                     df_all = df_all[['Peptidoform Site ID', 'Proteins', 'Unmodified Sequence', 'Peptidoform', 'Modification','Peptide Modification Position',
                                      'Protein Modification Positions','PSM Probability', 'PTM Probability', 'Final Probability', 'Site Q-Value','Site Passes Threshold [0.05]',
-                                     'Site Passes Threshold [0.01]', 'Decoy Peptide','Decoy Modification Site', 'PSM Count Passing Threshold [0.05]',
+                                     'Site Passes Threshold [0.01]', 'Decoy / Contaminant Peptide','Decoy Modification Site', 'PSM Count Passing Threshold [0.05]',
                                      'PSM Count Passing Threshold [0.01]', 'Source Dataset Identifier','Reanalysis Dataset Identifier','PubMedIDs', 'Sample ID', 'Organism',
                                      'Organism Part', 'Cell Line', 'Disease Information','Universal Spectrum Identifier', 'opt_PSM count 0.01<P<=0.05','opt_PSM count 0.05<P<=0.19',
                                      'opt_PSM count 0.19<P<=0.81', 'opt_PSM count 0.81<P<=0.95','opt_PSM count 0.95<P<0.99', 'opt_PSM count P>=0.99']]

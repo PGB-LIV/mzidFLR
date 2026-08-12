@@ -116,13 +116,23 @@ def site_based(input,FDR_cutoff,mod,verbose,decoy_prefix, species, contam):
     df, contam = contam_prefix(df, species, contam)
 
     df['Protein'] = df['All_Proteins'].str.split(':').str[0] # set primary protein after contam prefix added
-    # filter based on all proteins, only remove if all proteins are decoy
-    df['Protein_count'] = df['All_Proteins'].str.count(":")+1
-    df['Decoy_count'] = df['All_Proteins'].str.count(decoy_prefix)
-    df['Contam_count'] = df['All_Proteins'].str.count(contam)
-    df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count']+df['Contam_count'],1,0)
-    df = df[df.Decoy == 0]
-    df=df.drop(columns=['Protein_count', 'Decoy_count','Contam_count','Decoy'])
+    # filter based on all proteins, only remove if all proteins are decoy/contam
+    # split into list
+    df['All_Proteins_list'] = df['All_Proteins'].str.split(':')
+    # number of proteins
+    df['Protein_count'] = df['All_Proteins_list'].str.len()
+    # for each protein, if it starts with the contam or decoy prefix, sum output
+    df['decoy_contam_count'] = df['All_Proteins_list'].apply(
+    lambda proteins: sum(
+    p.startswith(decoy_prefix) or p.startswith(contam) for p in proteins
+    ))
+    # check if all proteins have the contam or decoy prefix
+    df['is_decoy_or_contam'] = np.where(df['Protein_count'] == df['decoy_contam_count'], 1, 0)
+    # remove rows where all mappings are to contam and/or decoy
+    df = df[df.is_decoy_or_contam == 0]
+   
+    df=df.drop(columns=['All_Proteins_list', 'Protein_count', 'decoy_contam_count', 'is_decoy_or_contam'])
+
     df = df.reset_index(drop=True)
     #if primary protein is decoy or contaminant, take next protein in all protein list as primary
     for i in range(len(df)):
@@ -172,12 +182,20 @@ def model_FLR(file,mod,verbose, decoy_prefix,species,contam):
 
     #df, contam = contam_prefix(df, species, contam)
     # filter based on all proteins, only remove if all proteins are decoy
-    df['Protein_count'] = df['All_Proteins'].str.count(":")+1
-    df['Decoy_count'] = df['All_Proteins'].str.count(decoy_prefix)
-    df['Contam_count'] = df['All_Proteins'].str.count(contam)
-    df['Decoy'] = np.where(df['Protein_count']==df['Decoy_count']+df['Contam_count'],1,0)
-    df = df[df.Decoy == 0]
-    df=df.drop(columns=['Protein_count', 'Decoy_count','Contam_count','Decoy'])
+    # split into list
+    df['All_Proteins_list'] = df['All_Proteins'].str.split(':')
+    # number of proteins
+    df['Protein_count'] = df['All_Proteins_list'].str.len()
+    # for each protein, if it starts with the contam or decoy prefix, sum output
+    df['decoy_contam_count'] = df['All_Proteins_list'].apply(
+    lambda proteins: sum(
+    p.startswith(decoy_prefix) or p.startswith(contam) for p in proteins
+    ))
+    df['is_decoy_or_contam'] = np.where(df['Protein_count'] == df['decoy_contam_count'], 1, 0)
+    # remove rows where all mappings are to contam and/or decoy
+    df = df[df.is_decoy_or_contam == 0]
+    df=df.drop(columns=['All_Proteins_list', 'Protein_count', 'decoy_contam_count', 'is_decoy_or_contam'])
+
     df = df.reset_index(drop=True)
     #if primary protein is decoy, take next protein in all protein list as primary
     for i in range(len(df)):
