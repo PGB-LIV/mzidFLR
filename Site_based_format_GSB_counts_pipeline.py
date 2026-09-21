@@ -112,10 +112,11 @@ def per_folder (i,p, decoy_method):
         if sys.argv[4] != "NA":
             simple_meta_file = sys.argv[4] + "/" + PXD + ".tsv"
             simple_meta = pd.read_csv(simple_meta_file, sep="\t")
+            df['All_PTM_protein_positions'] = df['All_PTM_protein_positions'].astype(str)
             for x in range(len(df)):
                 protein_PTM = ""
-                for z, y in zip(df.loc[x, 'All_Proteins'].split(":"),df.loc[x, 'All_PTM_protein_positions'].split(":")):
-                    for a, b in zip(df.loc[x, 'All_PTM_positions'].split(";"), y.split(";")):
+                for z, y in zip(str(df.loc[x, 'All_Proteins']).split(":"),str(df.loc[x, 'All_PTM_protein_positions']).split(":")):
+                    for a, b in zip(str(df.loc[x, 'All_PTM_positions']).split(";"), y.split(";")):
                         if int(a) == int(df.loc[x, 'PTM positions']):
                             protein_PTM += b + ";"
                     protein_PTM= protein_PTM[:-1] +":"
@@ -233,11 +234,12 @@ def per_folder (i,p, decoy_method):
 
         # No meta data mode
         else:
+            df['All_PTM_protein_positions'] = df['All_PTM_protein_positions'].astype(str)
             for x in range(len(df)):
                 protein_PTM = ""
                 for z, y in zip(df.loc[x, 'All_Proteins'].split(":"),
-                                df.loc[x, 'All_PTM_protein_positions'].split(":")):
-                    for a, b in zip(df.loc[x, 'All_PTM_positions'].split(";"), y.split(";")):
+                                str(df.loc[x, 'All_PTM_protein_positions']).split(":")):
+                    for a, b in zip(str(df.loc[x, 'All_PTM_positions']).split(";"), y.split(";")):
                         if int(a) == int(df.loc[x, 'PTM positions']):
                             protein_PTM += b + ";"
                     protein_PTM=protein_PTM[:-1]+":"
@@ -427,6 +429,7 @@ for decoy_method in ["", "_peptidoform_decoy", "_site_decoy"]:
                 if m == "all":
                     if len(df) >= 1:
                         df['PTM_residue'] = df.apply(lambda x: x['Peptide'][x['PTM positions'] - 1], axis=1)
+                        df['All_PTM_protein_positions'] = df['All_PTM_protein_positions'].astype(str)
                         df['All_PTM_protein_positions'] = df['All_PTM_protein_positions'].str.split(':')
                         df['All_Proteins'] = df['All_Proteins'].str.split(':')
                         df = df.explode(['All_PTM_protein_positions', 'All_Proteins'])
@@ -485,6 +488,8 @@ for decoy_method in ["", "_peptidoform_decoy", "_site_decoy"]:
             df_final = df_final[~df_final.index.str.contains(contam_prefix)]
 
             df_counts['PTM_residue'] = df_counts['Protein_pos_res'].str.rsplit("_", n=1).str[-1]
+
+            df_counts = df_counts.reset_index(drop=True)
             counts_res = pd.crosstab(df_counts['PTM_residue'], df_counts['PXD']).replace(0,
                                                                                          np.nan).stack().reset_index().rename(
                 columns={0: 'Count'})

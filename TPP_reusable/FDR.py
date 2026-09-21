@@ -10,7 +10,7 @@ import pandas as pd
 import time
 import sys
 
-f = lambda x, y : "" if y=="NA" else round(float([z if z != '' else '0' for z in x][y]),2)
+f = lambda x, y : "" if y=="NA" else round(float([z if z != '' else '0' for z in x][y]),3)
 r = lambda x, y : x.replace("unknown_mod",str(y),1)
 
 #Extract PTM prophet output to df
@@ -36,11 +36,11 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
         df['Mod_mass_temp']=df['Modification mass'].str.split(";")
         df['Index_unknown']=df['Mods_temp'].apply(lambda x: x.index("unknown_mod") if "unknown_mod" in x else "NA")
         df['Mods_replace']=df.apply(lambda x: f(x.Mod_mass_temp, x.Index_unknown), axis=1)
-        #replace specified mod mass with specified mod, round to 2dp
+        #replace specified mod mass with specified mod, round to 3dp
         df['Modifications']=df.apply(lambda x: r(x.Modifications, x.Mods_replace), axis=1)
 
     if mod_id!="NA" and mod_mass_id!="NA":
-        df['Modifications']=df['Modifications'].str.replace(str(round(float(mod_mass_id),2)),mod_id, regex=True)
+        df['Modifications']=df['Modifications'].str.replace(str(round(float(mod_mass_id),3)),mod_id, regex=True)
 
     for i in range(len(df)):
         peptide_temp=df.loc[i,'Peptide']
@@ -108,10 +108,13 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
     df2=df2.replace("E\[Pyro_glu\]","E[Glu->pyro-Glu]", regex=True)
     df2=df2.replace("C\[Pyro_glu\]","C[Ammonia-loss]", regex=True)
     df2=df2.replace("Carbamidomethylation","Carbamidomethyl", regex=True)
-    df2=df2.replace("346\.21","iTRAQ8plex", regex=True)
-    df2=df2.replace("304\.2","iTRAQ8plex", regex=True)
-    df2=df2.replace("\[+229\.16\]","[TMT6plex]", regex=True)
-    df2=df2.replace("42\.01","Acetyl", regex=True)
+    df2=df2.replace("\+346\.213","iTRAQ8plex", regex=True)
+    df2=df2.replace("\+304\.199","iTRAQ8plex", regex=True)
+    df2=df2.replace("\+304\.205","iTRAQ8plex", regex=True)
+    df2=df2.replace("\+304\.207","TMTPro", regex=True)
+    df2 = df2.replace("304\.207", "TMTPro", regex=True)
+    df2=df2.replace("\[+229\.163\]","[TMT6plex]", regex=True)
+    df2=df2.replace("42\.011","Acetyl", regex=True)
 
 
 
