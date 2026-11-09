@@ -100,22 +100,25 @@ def extract_PTMprophet_IDent_df(input,PXD,mod, mod_id, mod_mass_id):
                         "PTM positions":all_positions,"PTM Score": PTM_scores, "PTM_info":df['PTM info'].values,"Spectrum":df['Spectrum'].values,"mass_diff":df['mass_diff'].values
                            ,"ppm_error":df['ppm_error'].values, "Protein position":protein_positions,"Mass shift":df['Mass_shift'].values,"Charge":df['Charge'].values})
 
+    mods=df2[['Peptide_mod','PTM']]
+    #replace weird mods which cause issues with USI validation
+    #only on the columns holding mod names: these patterns also match eg. scan numbers (42.011 in .01142.01142.)
+    mods=mods.replace("pryo","pyro", regex=True)
+    mods=mods.replace("Q\[Pyro_glu\]","Q[Gln->pyro-Glu]", regex=True)
+    mods=mods.replace("E\[Pyro_glu\]","E[Glu->pyro-Glu]", regex=True)
+    mods=mods.replace("C\[Pyro_glu\]","C[Ammonia-loss]", regex=True)
+    mods=mods.replace("Carbamidomethylation","Carbamidomethyl", regex=True)
+    mods=mods.replace("\+346\.213","iTRAQ8plex", regex=True)
+    mods=mods.replace("\+304\.199","iTRAQ8plex", regex=True)
+    mods=mods.replace("\+304\.205","iTRAQ8plex", regex=True)
+    mods=mods.replace("\+304\.207","TMTPro", regex=True)
+    mods=mods.replace("304\.207", "TMTPro", regex=True)
+    mods=mods.replace("\[+229\.163\]","[TMT6plex]", regex=True)
+    mods=mods.replace("42\.011","Acetyl", regex=True)
+    df2[['Peptide_mod','PTM']]=mods
+
     df2["USI"]="mzspec:"+PXD+":"+df2['Spectrum'].str.rsplit(".",n=3).str[0] +":scan:"+df2['Spectrum'].str.rsplit(".",n=2).str[1]+":"+df2['Peptide_mod']+"/"+df2['Charge'].astype(str)
     df2['Source'] = df2['Spectrum'].str.split(".").str[0]
-    #replace weird mods which cause issues with USI validation
-    df2=df2.replace("pryo","pyro", regex=True)
-    df2=df2.replace("Q\[Pyro_glu\]","Q[Gln->pyro-Glu]", regex=True)
-    df2=df2.replace("E\[Pyro_glu\]","E[Glu->pyro-Glu]", regex=True)
-    df2=df2.replace("C\[Pyro_glu\]","C[Ammonia-loss]", regex=True)
-    df2=df2.replace("Carbamidomethylation","Carbamidomethyl", regex=True)
-    df2=df2.replace("\+346\.213","iTRAQ8plex", regex=True)
-    df2=df2.replace("\+304\.199","iTRAQ8plex", regex=True)
-    df2=df2.replace("\+304\.205","iTRAQ8plex", regex=True)
-    df2=df2.replace("\+304\.207","TMTPro", regex=True)
-    df2 = df2.replace("304\.207", "TMTPro", regex=True)
-    df2=df2.replace("\[+229\.163\]","[TMT6plex]", regex=True)
-    df2=df2.replace("42\.011","Acetyl", regex=True)
-
 
 
     return(df2)
