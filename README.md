@@ -64,8 +64,11 @@ OR "No meta-data mode", where no SDRF or meta-data is available, all meta-data c
 	$py Site_based_format_GSB_counts_pipeline.py [file_list.txt] NA NA NA [Gold count threshold] [Silver count threshold] [optional: DECOY_Prefix ie. DECOY] [optional: CONTAM_prefix ie. CONTAM] [optional: modification:target:decoy ie. phospho:STY:A]
 
 Environment variables (all optional):
+
   GSB_WORKERS        number of worker processes (default: available CPUs, capped at the number of tasks)
+  
   GSB_CSV_ENGINE     "pyarrow" (default) or "c" (pandas' reader)
+  
   GSB_ARROW_THREADS  pyarrow threads per worker process (default 1)
 
 Requires txt file with locations of analysis files (ie. PXD/Experiment_name), csv file (meta.csv) with meta data (at least PMID), sdrf file location (eg. "PRIDE/SDRFs/"), gold count and silver count - if meta or sdrf files not available, use "NA".
