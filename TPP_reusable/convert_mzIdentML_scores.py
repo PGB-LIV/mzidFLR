@@ -12,8 +12,11 @@ def convert(input):
             self.CurrentData = ""
             self.Seq = ""
             self.Counter=0
+            self.InModification = False
 
         def endElement(self, tag):
+            if tag == "Modification":
+                self.InModification = False
             if self.CurrentData == "PeptideSequence":
                 output_peptidedict.write(self.Seq)
             self.CurrentData = ""
@@ -29,6 +32,7 @@ def convert(input):
             if tag == "Peptide":
                 output_peptidedict.write("\n"+attributes['id']+",")
             if tag == "Modification":
+                self.InModification = True
                 output_peptidedict.write(":"+attributes['location']+";")
                 if 'residues' in attributes:
                     output_peptidedict.write(attributes['residues']+";")
@@ -38,7 +42,7 @@ def convert(input):
                     output_peptidedict.write(attributes['monoisotopicMassDelta']+";")
                 else:
                     output_peptidedict.write(";")
-            if tag == "cvParam" and attributes['cvRef']=="UNIMOD":
+            if tag == "cvParam" and attributes['cvRef']=="UNIMOD" and self.InModification:
                 output_peptidedict.write(attributes['name']+";")
 
             #add to protein dict: pepid to dbseqref, position, +1/-1
